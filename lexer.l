@@ -6,6 +6,8 @@
 #include <stdarg.h>
 %}
 
+%option yylineno nodefault noyywrap
+
 %%
 
 "up"    |
@@ -21,17 +23,28 @@
 "arrow"     |
 "spline"        { strcpy(yylval.s, yytext); return PRIMITIVE; }
 
-
 "\\#".*
-[ \t]   
+[ \t]
 \n          { return EOL; }
-.           { yyerror("Unexpected character %c\n", *yytext); }
+
+.           {
+                yyerror(
+                    "Unexpected character %c at line no. %d\n",
+                    *yytext, yylineno
+                );
+                exit(EXIT_FAILURE);
+            }
 %%
 
 void yyerror(char *s, ...){
-    va_list ap;
+    if(!strcmp(s, "syntax error")){
+        fprintf(stderr, "Syntax error at line no. %d\n", yylineno);
+        exit(EXIT_FAILURE);
+    }else{
+        va_list ap;
 
-    va_start(ap, s);
-    vfprintf(stderr, s, ap);
-    va_end(ap);
+        va_start(ap, s);
+        vfprintf(stderr, s, ap);
+        va_end(ap);
+    }
 }
