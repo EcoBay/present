@@ -10,18 +10,18 @@
 
 %%
 
-"up"    |
-"down"  |
-"left"  |
-"right"     { strcpy(yylval.s, yytext); return DIRECTION; }
+"up"        { return UP; }
+"down"      { return DOWN; }
+"left"      { return LEFT; }
+"right"     { return RIGHT; }
 
-"box"       |
-"circle"    |
-"ellipse"   |
-"arc"       |
-"line"      |
-"arrow"     |
-"spline"        { strcpy(yylval.s, yytext); return PRIMITIVE; }
+"box"       { return BOX; }
+"circle"    { return CIRCLE; }
+"ellipse"   { return ELLIPSE; }
+"arc"       { return ARC; }
+"line"      { return LINE; }
+"arrow"     { return ARROW; }
+"spline"    { return SPLINE; }
 
 "\\#".*
 [ \t]

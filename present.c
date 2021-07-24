@@ -2,60 +2,65 @@
 #include "present.tab.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static int d = 3;
 static float x = 0.0, y = 0.0;
 
-void draw(char *primitive, char *direction){
-    if (!strcmp(primitive, "box")){
-        printf("Box with start at %.2f, %.2f ", x, y);
-        if(d < 2) y += 0.5;
-        else x += 0.75;
-        printf("to %.2f, %.2f\n", x, y);
-        changeDirection(direction);
-    } else if (!strcmp(primitive, "circle")){
-        printf("Circle with start at %0.2f, %.2f ", x, y);
-        if(d < 2) y += 0.5;
-        else x += 0.5;
-        printf("to %.2f, %.2f\n", x, y);
-        changeDirection(direction);
-    } else if (!strcmp(primitive, "ellipse")){
-        printf("Ellipse with start at %.2f, %.2f ", x, y);
-        if(d < 2) y += 0.5;
-        else x += 0.75;
-        printf("to %.2f, %.2f\n", x, y);
-        changeDirection(direction);
-    } else if (!strcmp(primitive, "arc")){
-        printf("Arc\n");
-        changeDirection(direction);
-    } else if (
-            !strcmp(primitive, "line") |
-            !strcmp(primitive, "arrow") |
-            !strcmp(primitive, "spline") 
-    ){
-        changeDirection(direction);
-        printf("%s with start at %.2f, %.2f ", primitive, x, y);
-        switch (d){
-            case 0: y += 0.5; break;
-            case 1: y -= 0.5; break;
-            case 2: x += 0.5; break;
-            case 3: x -= 0.5; break;
-        }
-        printf("to %.2f, %.2f\n", x, y);
-    } else 
-        fprintf(stderr, "Invalid primitive: %s\n", primitive);
+void draw(uint8_t primitive, int direction){
+    char *a;
+    switch (primitive) {
+        case 0:
+            printf("Box with start at %.2f, %.2f ", x, y);
+            if(d < 2) y += 0.5;
+            else x += 0.75;
+            printf("to %.2f, %.2f\n", x, y);
+            changeDirection(direction);
+            break;
+        case 1:
+            printf("Circle with start at %0.2f, %.2f ", x, y);
+            if(d < 2) y += 0.5;
+            else x += 0.5;
+            printf("to %.2f, %.2f\n", x, y);
+            changeDirection(direction);
+            break;
+        case 2:
+            printf("Ellipse with start at %.2f, %.2f ", x, y);
+            if(d < 2) y += 0.5;
+            else x += 0.75;
+            printf("to %.2f, %.2f\n", x, y);
+            changeDirection(direction);
+            break;
+        case 3:
+            printf("Arc\n");
+            changeDirection(direction);
+            break;
+        case 4:
+            a = strdup("Line");
+            goto drawLine;
+        case 5:
+            a = strdup("Arrow");
+            goto drawLine;
+        case 6:
+            a = strdup("Spline");
+            goto drawLine;
+        drawLine:
+            printf("%s with start at %.2f, %.2f ", a, x, y);
+            switch (d){
+                case 0: y += 0.5; break;
+                case 1: y -= 0.5; break;
+                case 2: x += 0.5; break;
+                case 3: x -= 0.5; break;
+            }
+            printf("to %.2f, %.2f\n", x, y);
+            free(a);
+            break;
+    }
 
 }
 
-void changeDirection(char *direction){
-    if (!strcmp(direction, "up")) d = 0;
-    else if (!strcmp(direction, "down")) d = 1;
-    else if (!strcmp(direction, "left")) d = 2;
-    else if (!strcmp(direction, "right")) d = 3;
-    else if (!strcmp(direction, "same")) d = d;
-    else fprintf(stderr, "Invalid direction: %s\n", direction);
-
-    printf("Changing direction to %s\n", direction);
+void changeDirection(int direction){
+    if (d >= 0) d = direction;
 }
 
 int main(int argc, char **argv){

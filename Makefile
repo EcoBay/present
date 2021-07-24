@@ -1,15 +1,15 @@
 LCFLAGS=`pkg-config --cflags --libs cairo`
 LIBS=-lfl
 
-all: present
+all: parser lexer present
 
 parser: parser.y
 	bison $(BISONFLAGS) -d -opresent.tab.c parser.y
 
-lexer: lexer.l
+lexer: lexer.l present.tab.c present.tab.h
 	flex $(FLEXFlAGS) -opresent.lex.c lexer.l 
 
-present: parser lexer present.h present.c
+present: present.lex.c present.tab.h present.tab.c present.h present.c
 	$(CC) present.c present.lex.c present.tab.c $(CFLAGS) ${LCFLAGS} $(LIBS) -o $@ 
 
 clean:
