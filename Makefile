@@ -1,5 +1,8 @@
-LCFLAGS=`pkg-config --cflags --libs cairo`
+MYLFLAGS=`pkg-config --libs cairo`
+MYCFLAGS=`pkg-config --cflags cairo`
 LIBS=-lfl -lm
+DEPS = present.tab.h present.h object.h
+OBJ = present.lex.o present.tab.o present.o object.o
 
 all: parser lexer present
 
@@ -9,8 +12,11 @@ parser: parser.y
 lexer: lexer.l present.tab.c present.tab.h
 	flex $(FLEXFlAGS) -opresent.lex.c lexer.l 
 
-present: present.lex.c present.tab.h present.tab.c present.h present.c object.c object.h
-	$(CC) present.c present.lex.c present.tab.c object.c $(CFLAGS) ${LCFLAGS} $(LIBS) -o $@ 
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(MYCFLAGS);
+
+present: $(OBJ)
+	$(CC) $^ $(CFLAGS) ${MYCFLAGS} ${MYLFLAGS} $(LIBS) -o $@ 
 
 clean:
-	rm -f present present.lex.c present.tab* *.mp4
+	rm -f present present.lex.c present.tab* *.o *.mp4
