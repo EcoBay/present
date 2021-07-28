@@ -26,6 +26,7 @@
 "\\#".*
 [ \t]
 \n          { return EOL; }
+";"         { return *yytext; }
 
 .           {
                 yyerror(
