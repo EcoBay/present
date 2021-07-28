@@ -113,6 +113,8 @@ struct presentation {
     struct scene *scenes;
 };
 
+void* getLast(void*);
+
 void newScene();
 void newKeyframe(float duration, enum easingFunction);
 void newDrawEvent(struct primitive*);
@@ -120,7 +122,6 @@ struct primitive* newPrimitive(enum primitiveType);
 void preparePrimitive(struct primitive*);
 
 void initPresentation();
-void renderPresentation();
 
 void setDirection(uint8_t);
 uint8_t getDirection();

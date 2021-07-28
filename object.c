@@ -7,7 +7,7 @@
 
 struct presentation *g_presentation;
 
-static void*
+void*
 getLast(void *i){
     if (!i) return NULL;
 
@@ -68,8 +68,7 @@ newDrawEvent(struct primitive *p){
         newKeyframe(1.0, EASE_LINEAR);
     }
 
-    struct keyframe *k = s -> keyframes;
-    k = getLast(k);
+    struct keyframe *k = getLast(s -> keyframes);
 
     struct event *e = malloc(sizeof(struct event));
     e -> next = NULL;
@@ -268,42 +267,6 @@ void
 initPresentation(){
     g_presentation = malloc(sizeof(struct presentation));
 }
-
-static void
-renderEvent(struct event *e, cairo_t *cr, float progress){
-    if (e -> eventType == 0) {
-    } /* Draw Event */
-    else {
-    } /* Transform Event */
-}
-
-void
-renderPresentation(){
-    const int WIDTH = 960;
-    const int HEIGHT = 720;
-    const char *OUTNAME = "test.mp4";
-    char *ffmpeg_cmd = malloc(256);
-
-    snprintf(ffmpeg_cmd, 256,
-            "ffmpeg -r 24 -f rawvideo -pix_fmt bgra "
-            "-s %dx%d -i - -threads 0 -preset fast "
-            "-y -pix_fmt yuv420p -crf 21 %s",
-            WIDTH, HEIGHT, OUTNAME);
-
-    FILE *ffmpeg = popen(ffmpeg_cmd, "w");
-    if (!ffmpeg) {
-        fprintf(stderr, "Error: cannot open ffmpeg instance\n");
-        exit(EXIT_FAILURE);
-    }
-
-    uint8_t *buf = malloc(4 * 960 * 720);
-    memset(buf, 255, 4 * 960 * 720);
-
-    for (int i = 0; i < 24 * 5; i++)
-        fwrite(buf, 4 * 960 * 720, 1, ffmpeg);
-
-    pclose(ffmpeg);
-};
 
 void
 setDirection(uint8_t d){
