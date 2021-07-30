@@ -72,6 +72,8 @@ struct primitive {
     float chop;
     uint8_t arrowStyle;
     uint8_t flags;
+    /* 1 - hasSegment;
+     */
     struct color *fill;
     struct textList *txt;
 };

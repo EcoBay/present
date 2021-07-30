@@ -1,6 +1,7 @@
 %{
 #include "object.h"
 #include "present.h"
+#include <stddef.h>
 %}
 
 %union {
@@ -69,7 +70,7 @@ primitive: BOX
 
                 $$ -> direction = getDirection();
                 getCursor(&$$ -> start);
-                        }
+            }
          | ARC          
             {
                 $$ = newPrimitive(PRIM_ARC);
@@ -89,6 +90,7 @@ primitive: BOX
          | ARROW        
             {
                 $$ = newPrimitive(PRIM_ARROW);
+                $$ -> arrowStyle = 1;
                 $$ -> expr = 0.5;
 
                 $$ -> direction = getDirection();
@@ -116,6 +118,7 @@ primitive: BOX
                     struct location *l;
                     l = getLastSegment($$);
                     l -> y += 0.5;
+                    $$ -> flags |= 1;
                 } // check if arc, line, arrow, spline, or move
                 setDirection(0);
             }
@@ -125,6 +128,7 @@ primitive: BOX
                     struct location *l;
                     l = getLastSegment($$);
                     l -> x += 0.5;
+                    $$ -> flags |= 1;
                 } // check if arc, line, arrow, spline, or move
                 setDirection(1);
             }
@@ -134,6 +138,7 @@ primitive: BOX
                     struct location *l;
                     l = getLastSegment($$);
                     l -> y -= 0.5;
+                    $$ -> flags |= 1;
                 } // check if arc, line, arrow, spline, or move
                 setDirection(2);
             }
@@ -143,8 +148,30 @@ primitive: BOX
                     struct location *l;
                     l = getLastSegment($$);
                     l -> x -= 0.5;
+                    $$ -> flags |= 1;
                 } // check if arc, line, arrow, spline, or move
                 setDirection(3);
+            }
+        | primitive THEN
+            {
+                struct location *l;
+                if (! $$ -> segments){
+                    l = getLastSegment($$);
+                    float e = $$ -> expr;
+                    switch ($$ -> direction) {
+                        case 0: l -> y += e; break;
+                        case 1: l -> x += e; break;
+                        case 2: l -> y -= e; break;
+                        case 3: l -> y -= e; break;
+                    }
+                }
+
+                l = getLastSegment($$);
+                l -> next = malloc(sizeof(struct location));
+                l -> next -> next = NULL;
+                l -> next -> x = l -> x;
+                l -> next -> y = l -> y;
+                $$ -> flags &= ~1;
             }
 ;
 

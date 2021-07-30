@@ -14,6 +14,7 @@
 "down"      { return DOWN; }
 "left"      { return LEFT; }
 "right"     { return RIGHT; }
+"then"      { return THEN; }
 
 "box"       { return BOX; }
 "circle"    { return CIRCLE; }

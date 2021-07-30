@@ -224,9 +224,9 @@ preparePrimitive(struct primitive *p){
         case PRIM_LINE:
         case PRIM_ARROW:
         case PRIM_SPLINE:
-
-            if (!p -> segments){
-                l = getLastSegment(p);
+        case PRIM_MOVE:
+            l = getLastSegment(p);
+            if (!(p -> flags & 1)){
                 float e = p -> expr;
                 switch (p -> direction) {
                     case 0: l -> y += e; break;
@@ -245,36 +245,11 @@ preparePrimitive(struct primitive *p){
             l = p -> segments;
             for(int i = 1; i < count; i++){
                 ps[i] = (struct vec2d) {
-                    l -> x,
-                    l -> y
+                    l -> x, l -> y
                 };
                 l = l -> next;
             }
             p -> end = ps[count - 1];
-            break;
-
-        case PRIM_MOVE:
-            ps = malloc(2 * sizeof(struct vec2d));
-            count = 2;
-
-            if (!p -> segments){
-                l = getLastSegment(p);
-                float e = p -> expr;
-                switch (p -> direction) {
-                    case 0: l -> y += e; break;
-                    case 1: l -> x += e; break;
-                    case 2: l -> y -= e; break;
-                    case 3: l -> y -= e; break;
-                }
-            };
-
-            l = getLastSegment(p);
-            ps[0] = p -> start;
-            ps[1] = (struct vec2d) {
-                l -> x,
-                l -> y
-            };
-            p -> end = ps[1];
             break;
     }
 

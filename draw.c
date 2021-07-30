@@ -54,24 +54,52 @@ drawCircle(cairo_t *cr, struct primitive *p){
 }
 
 static inline void
+drawArrowhead(cairo_t *cr, struct primitive *p){
+    if ( p -> arrowStyle & 1 ){
+        struct location *l = getLastSegment(p);
+        cairo_rectangle(cr, l -> x, l -> y, -0.5/5,  0.5/16);
+        cairo_rectangle(cr, l -> x, l -> y, -0.5/5, -0.5/16);
+        cairo_fill(cr);
+    }
+}
+
+static inline void
+drawLine(cairo_t *cr, struct primitive *p){
+    cairo_new_path(cr);
+    cairo_move_to(cr, p -> start.x, p -> start.y);
+
+    for (struct location *l = p -> segments; l; l = l -> next) {
+        cairo_line_to(cr, l -> x, l -> y);
+    }
+
+    cairo_set_line_width(cr, 1.0 / DPI);
+    cairo_stroke(cr);
+
+    drawArrowhead(cr, p);
+}
+
+static inline void
+drawSpline(cairo_t *cr, struct primitive *p){
+}
+
+static inline void
 renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     struct primitive *p = e -> a.pr;
     switch (p -> t) {
         case PRIM_BOX:
-            drawRectangle(cr, p);
-            break;
+            drawRectangle(cr, p); break;
         case PRIM_ELLIPSE:
-            drawEllipse(cr, p);
-            break;
+            drawEllipse(cr, p); break;
         case PRIM_CIRCLE:
-            drawCircle(cr, p);
-            break;
+            drawCircle(cr, p); break;
         case PRIM_ARC:
+            break;
         case PRIM_LINE:
         case PRIM_ARROW:
+            drawLine(cr, p); break;
         case PRIM_SPLINE:
-        case PRIM_MOVE:
+            drawSpline(cr, p); break;
     }
 };
 
