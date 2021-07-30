@@ -39,9 +39,9 @@ statement:
 ;
 
 direction_stmt: UP      { setDirection(0); }
-              | LEFT    { setDirection(1); }
+              | RIGHT   { setDirection(1); }
               | DOWN    { setDirection(2); }
-              | RIGHT   { setDirection(3); }
+              | LEFT    { setDirection(3); }
 ;
 
 primitive: BOX          
@@ -119,12 +119,12 @@ primitive: BOX
                 } // check if arc, line, arrow, spline, or move
                 setDirection(0);
             }
-        | primitive LEFT
+        | primitive RIGHT
             {
                 if ($$ -> t > 2 && $$ -> t != 9) {
                     struct location *l;
                     l = getLastSegment($$);
-                    l -> x -= 0.5;
+                    l -> x += 0.5;
                 } // check if arc, line, arrow, spline, or move
                 setDirection(1);
             }
@@ -137,12 +137,12 @@ primitive: BOX
                 } // check if arc, line, arrow, spline, or move
                 setDirection(2);
             }
-        | primitive RIGHT
+        | primitive LEFT
             {
                 if ($$ -> t > 2 && $$ -> t != 9) {
                     struct location *l;
                     l = getLastSegment($$);
-                    l -> x += 0.5;
+                    l -> x -= 0.5;
                 } // check if arc, line, arrow, spline, or move
                 setDirection(3);
             }
