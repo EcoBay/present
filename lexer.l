@@ -22,6 +22,7 @@
 "line"      { return LINE; }
 "arrow"     { return ARROW; }
 "spline"    { return SPLINE; }
+"move"      { return MOVE; }
 
 "\\#".*
 [ \t]

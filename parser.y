@@ -56,7 +56,7 @@ primitive: BOX
          | CIRCLE       
             {
                 $$ = newPrimitive(PRIM_CIRCLE);
-                $$ -> rad = 0.5;
+                $$ -> rad = 0.25;
 
                 $$ -> direction = getDirection();
                 getCursor(&$$ -> start);
@@ -73,7 +73,7 @@ primitive: BOX
          | ARC          
             {
                 $$ = newPrimitive(PRIM_ARC);
-                $$ -> rad = 0.5;
+                $$ -> rad = 0.25;
 
                 $$ -> direction = getDirection();
                 getCursor(&$$ -> start);

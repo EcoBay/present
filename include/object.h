@@ -90,7 +90,6 @@ struct event {
      */
     uint8_t eventType;
     union eventState a;
-    cairo_pattern_t *overlay;
 };
 
 struct keyframe {

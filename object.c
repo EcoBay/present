@@ -74,7 +74,6 @@ newDrawEvent(struct primitive *p){
     e -> next = NULL;
     e -> eventType = 0;
     e -> a.pr = p;
-    e -> overlay = NULL;
 
     if (!k -> events) {
         k -> events = e;
@@ -129,15 +128,16 @@ chopBoundingBox(struct primitive *p){
 
 static void
 updateBoundingBox(struct primitive *p, struct vec2d *ps, uint8_t c){
-    struct vec2d min, max, mid;
-    for(int i = 0; i < c; i++){
+    struct vec2d min = ps[0];
+    struct vec2d max = ps[0];
+    for(int i = 1; i < c; i++){
         if(ps[i].x < min.x) min.x = ps[i].x;
         else if(ps[i].x > max.x) max.x = ps[i].x;
         if(ps[i].y < min.y) min.y = ps[i].y;
         else if(ps[i].y > max.y) max.y = ps[i].y;
     }
 
-    mid = (struct vec2d) {
+    struct vec2d mid = {
         (min.x + max.x) / 2,
         (min.y + max.y) / 2
     };
@@ -157,6 +157,7 @@ updateBoundingBox(struct primitive *p, struct vec2d *ps, uint8_t c){
 
 void
 preparePrimitive(struct primitive *p){
+    struct location *l;
     struct vec2d *ps;
     uint8_t count;
 
@@ -223,17 +224,25 @@ preparePrimitive(struct primitive *p){
         case PRIM_LINE:
         case PRIM_ARROW:
         case PRIM_SPLINE:
+
+            if (!p -> segments){
+                l = getLastSegment(p);
+                float e = p -> expr;
+                switch (p -> direction) {
+                    case 0: l -> y += e; break;
+                    case 1: l -> x += e; break;
+                    case 2: l -> y -= e; break;
+                    case 3: l -> y -= e; break;
+                }
+            };
+
             count = 1;
-            for(
-                struct location *l = p -> segments;
-                l;
-                l = l -> next, count++
-            );
+            for(l = p -> segments; l; l = l -> next, count++);
 
             ps = malloc(count * sizeof(struct vec2d));
             ps[0] = p -> start;
 
-            struct location *l = p -> segments;
+            l = p -> segments;
             for(int i = 1; i < count; i++){
                 ps[i] = (struct vec2d) {
                     l -> x,
@@ -243,17 +252,29 @@ preparePrimitive(struct primitive *p){
             }
             p -> end = ps[count - 1];
             break;
+
         case PRIM_MOVE:
             ps = malloc(2 * sizeof(struct vec2d));
             count = 2;
 
+            if (!p -> segments){
+                l = getLastSegment(p);
+                float e = p -> expr;
+                switch (p -> direction) {
+                    case 0: l -> y += e; break;
+                    case 1: l -> x += e; break;
+                    case 2: l -> y -= e; break;
+                    case 3: l -> y -= e; break;
+                }
+            };
+
+            l = getLastSegment(p);
             ps[0] = p -> start;
             ps[1] = (struct vec2d) {
-                p -> segments -> x,
-                p -> segments -> y
+                l -> x,
+                l -> y
             };
             p -> end = ps[1];
-
             break;
     }
 
