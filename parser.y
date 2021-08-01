@@ -173,6 +173,21 @@ primitive: BOX
                 l -> next -> y = l -> y;
                 $$ -> flags &= ~1;
             }
+        | primitive LARROW
+            {
+                $$ -> arrowStyle &= ~3;
+                $$ -> arrowStyle |=  2;
+            }
+        | primitive RARROW
+            {
+                $$ -> arrowStyle &= ~3;
+                $$ -> arrowStyle |=  1;
+            }
+        | primitive LRARROW
+            {
+                $$ -> arrowStyle &= ~3;
+                $$ -> arrowStyle |=  3;
+            }
 ;
 
 %%

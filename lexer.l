@@ -10,12 +10,6 @@
 
 %%
 
-"up"        { return UP; }
-"down"      { return DOWN; }
-"left"      { return LEFT; }
-"right"     { return RIGHT; }
-"then"      { return THEN; }
-
 "box"       { return BOX; }
 "circle"    { return CIRCLE; }
 "ellipse"   { return ELLIPSE; }
@@ -24,6 +18,15 @@
 "arrow"     { return ARROW; }
 "spline"    { return SPLINE; }
 "move"      { return MOVE; }
+
+"up"        { return UP; }
+"down"      { return DOWN; }
+"left"      { return LEFT; }
+"right"     { return RIGHT; }
+"then"      { return THEN; }
+"<-"        { return LARROW; }
+"->"        { return RARROW; }
+"<->"       { return LRARROW; }
 
 "\\#".*
 [ \t]

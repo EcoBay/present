@@ -55,11 +55,50 @@ drawCircle(cairo_t *cr, struct primitive *p){
 
 static inline void
 drawArrowhead(cairo_t *cr, struct primitive *p){
-    if ( p -> arrowStyle & 1 ){
-        struct location *l = getLastSegment(p);
-        cairo_rectangle(cr, l -> x, l -> y, -0.5/5,  0.5/16);
-        cairo_rectangle(cr, l -> x, l -> y, -0.5/5, -0.5/16);
+    struct vec2d l0 = p -> start;
+    struct vec2d l1 = { p -> segments -> x, p -> segments -> y };
+
+    if ( p -> arrowStyle & 2 ) {
+        cairo_matrix_t save_matrix;
+        cairo_get_matrix(cr, &save_matrix);
+
+        float angle = atanf( ( l0.y - l1.y ) / ( l0.x - l1.x) );
+        cairo_translate(cr, l0.x, l0.y);
+        cairo_rotate(cr, angle);
+
+        cairo_new_path(cr);
+        cairo_move_to(cr, 1.0 / 10, -1.0 / 32);
+        cairo_line_to(cr, 0, 0);
+        cairo_line_to(cr, 1.0 / 10,  1.0 / 32);
+        cairo_close_path(cr);
+
         cairo_fill(cr);
+
+        cairo_set_matrix(cr, &save_matrix);
+    }
+
+    if ( p -> arrowStyle & 1 ) {
+        for(struct location *l = p -> segments -> next; l; l = l -> next){
+            l0 = l1;
+            l1 = (struct vec2d) { l -> x, l -> y };
+        }
+
+        cairo_matrix_t save_matrix;
+        cairo_get_matrix(cr, &save_matrix);
+
+        float angle = atanf( ( l1.y - l0.y ) / ( l1.x - l0.x) );
+        cairo_translate(cr, l1.x, l1.y);
+        cairo_rotate(cr, angle);
+
+        cairo_new_path(cr);
+        cairo_move_to(cr, -1.0 / 10, -1.0 / 32);
+        cairo_line_to(cr, 0, 0);
+        cairo_line_to(cr, -1.0 / 10,  1.0 / 32);
+        cairo_close_path(cr);
+
+        cairo_fill(cr);
+
+        cairo_set_matrix(cr, &save_matrix);
     }
 }
 
