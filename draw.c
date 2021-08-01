@@ -119,6 +119,32 @@ drawLine(cairo_t *cr, struct primitive *p){
 
 static inline void
 drawSpline(cairo_t *cr, struct primitive *p){
+    cairo_new_path(cr);
+    cairo_move_to(cr, p -> start.x, p -> start.y);
+    cairo_line_to(cr,
+            (p -> start.x + p -> segments -> x) / 2.0,
+            (p -> start.y + p -> segments -> y) / 2.0);
+
+    struct location *l = p -> segments;
+    struct vec2d l0 = { p -> start.x, p -> start.y };
+
+    while (l -> next) {
+        cairo_curve_to(cr,
+                (l0.x + 4.0 * l -> x) / 5.0,
+                (l0.y + 4.0 * l -> y) / 5.0,
+                (4.0 * l -> x + l -> next -> x) / 5.0,
+                (4.0 * l -> y + l -> next -> y) / 5.0,
+                (l -> x + l -> next -> x) / 2.0,
+                (l -> y + l -> next -> y) / 2.0);
+        l0 = (struct vec2d) {l -> x, l -> y};
+        l = l -> next;
+    }
+
+    cairo_line_to(cr, l -> x, l -> y);
+    cairo_set_line_width(cr, 1.0 / DPI);
+    cairo_stroke(cr);
+
+    drawArrowhead(cr, p);
 }
 
 static inline void
