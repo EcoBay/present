@@ -7,6 +7,7 @@
 %union {
     char *s;
     struct primitive *p;
+    struct textList *t;
 }
 
 /* primitives */
@@ -23,6 +24,7 @@
 %token EOL
 
 %type <p> primitive
+%type <t> text_list
 
 %%
 program: statement
@@ -112,6 +114,14 @@ primitive: BOX
                 $$ -> direction = getDirection();
                 getCursor(&$$ -> start);
             }
+        | text_list
+            {
+                $$ = newPrimitive(PRIM_TEXT_LIST);
+                $$ -> txt = $1;
+
+                $$ -> direction = getDirection();
+                getCursor(&$$ -> start);
+            }
         | primitive UP
             {
                 if ($$ -> t > 2 && $$ -> t != 9) {
@@ -187,6 +197,16 @@ primitive: BOX
             {
                 $$ -> arrowStyle &= ~3;
                 $$ -> arrowStyle |=  3;
+            }
+;
+
+text_list: TEXT
+            {
+                $$ = addTextList($1, 0, NULL);
+            }
+         | text_list TEXT
+            {
+                $$ = addTextList($2, 0, $1);
             }
 ;
 

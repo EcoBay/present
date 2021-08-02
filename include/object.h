@@ -130,4 +130,5 @@ void setCursor(struct vec2d*);
 void getCursor(struct vec2d*);
 
 struct location* getLastSegment(struct primitive*);
+struct textList* addTextList(char*, uint8_t, struct textList*);
 #endif

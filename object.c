@@ -321,3 +321,22 @@ getLastSegment(struct primitive *p){
     }
     return getLast(p -> segments);
 }
+
+struct textList*
+addTextList(char *s, uint8_t positioning, struct textList *t){
+    struct textList* t1 = getLast(t);
+
+    if (!t1) {
+        t1 = malloc(sizeof(struct textList));
+        t = t1;
+    } else {
+        t1 -> next = malloc(sizeof(struct textList));
+        t1 = t1 -> next;
+    }
+    
+    t1 -> next = NULL;
+    t1 -> s = s;
+    t1 -> positioning = positioning;
+
+    return t;
+}

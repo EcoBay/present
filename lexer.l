@@ -18,6 +18,11 @@
 "arrow"     { return ARROW; }
 "spline"    { return SPLINE; }
 "move"      { return MOVE; }
+\"([^\\\"]|\\\")*\" {
+                yytext[yyleng - 1] = '\0';
+                yylval.s = strdup(yytext + 1);
+                return TEXT;
+            }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
