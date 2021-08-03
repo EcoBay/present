@@ -18,7 +18,7 @@
 %token UP DOWN LEFT RIGHT
 
 /* attributes */
-%token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED
+%token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
 %token CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
 
 %token EOL
@@ -124,43 +124,55 @@ primitive: BOX
             }
         | primitive UP
             {
-                if ($$ -> t > 2 && $$ -> t != 9) {
+                if ($$ -> t > 3 && $$ -> t != 9) {
                     struct location *l;
                     l = getLastSegment($$);
                     l -> y += 0.5;
                     $$ -> flags |= 1;
-                } // check if arc, line, arrow, spline, or move
-                setDirection(0);
+                    setDirection(0);
+                } // check if line, arrow, spline, or move
+                else if ($$ -> t == 3) {
+                    $$ -> direction = 0;
+                }
             }
         | primitive RIGHT
             {
-                if ($$ -> t > 2 && $$ -> t != 9) {
+                if ($$ -> t > 3 && $$ -> t != 9) {
                     struct location *l;
                     l = getLastSegment($$);
                     l -> x += 0.5;
                     $$ -> flags |= 1;
-                } // check if arc, line, arrow, spline, or move
-                setDirection(1);
+                    setDirection(1);
+                } // check if line, arrow, spline, or move
+                else if ($$ -> t == 3) {
+                    $$ -> direction = 1;
+                }
             }
         | primitive DOWN
             {
-                if ($$ -> t > 2 && $$ -> t != 9) {
+                if ($$ -> t > 3 && $$ -> t != 9) {
                     struct location *l;
                     l = getLastSegment($$);
                     l -> y -= 0.5;
                     $$ -> flags |= 1;
-                } // check if arc, line, arrow, spline, or move
-                setDirection(2);
+                    setDirection(2);
+                } // check if line, arrow, spline, or move
+                else if ($$ -> t == 3) {
+                    $$ -> direction = 2;
+                }
             }
         | primitive LEFT
             {
-                if ($$ -> t > 2 && $$ -> t != 9) {
+                if ($$ -> t > 3 && $$ -> t != 9) {
                     struct location *l;
                     l = getLastSegment($$);
                     l -> x -= 0.5;
                     $$ -> flags |= 1;
-                } // check if arc, line, arrow, spline, or move
-                setDirection(3);
+                    setDirection(3);
+                } // check if line, arrow, spline, or move
+                else if ($$ -> t == 3) {
+                    $$ -> direction = 3;
+                }
             }
         | primitive THEN
             {
@@ -197,6 +209,10 @@ primitive: BOX
             {
                 $$ -> arrowStyle &= ~3;
                 $$ -> arrowStyle |=  3;
+            }
+        | primitive CW
+            {
+                $$ -> flags |= 2;
             }
 ;
 

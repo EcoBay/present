@@ -29,9 +29,12 @@
 "left"      { return LEFT; }
 "right"     { return RIGHT; }
 "then"      { return THEN; }
+
 "<-"        { return LARROW; }
 "->"        { return RARROW; }
 "<->"       { return LRARROW; }
+
+"cw"        { return CW; }
 
 "\\#".*
 [ \t]

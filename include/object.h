@@ -73,6 +73,7 @@ struct primitive {
     uint8_t arrowStyle;
     uint8_t flags;
     /* 1 - hasSegment;
+     * 2 - cw
      */
     struct color *fill;
     struct textList *txt;

@@ -109,10 +109,15 @@ newPrimitive(enum primitiveType t){
 
 static void
 chopBoundingBox(struct primitive *p){
-    if(p -> t != PRIM_CIRCLE && p -> t != PRIM_ELLIPSE)
-        return;
+    switch (p -> t) {
+        default:
+            return;
+        case PRIM_CIRCLE:
+        case PRIM_ELLIPSE:
+        case PRIM_ARC:
+    }
 
-    float wid = p -> wid / 2, ht = p -> ht / 7;
+    float wid = p -> wid / 2, ht = p -> ht / 2;
     if(p -> t == PRIM_CIRCLE) wid = ht = p -> rad;
 
     p -> ne.y -= ht  * 0.2928932188;
@@ -250,6 +255,61 @@ preparePrimitive(struct primitive *p){
                 l = l -> next;
             }
             p -> end = ps[count - 1];
+            break;
+        case PRIM_ARC:
+            ps = malloc(4 * sizeof(struct vec2d));
+            count = 4;
+
+            uint8_t dir = (p -> flags & 2) ? 1 : 3;
+            dir = (dir + p -> direction) % 4;
+
+            float invY = 1.0, invX = 1.0;
+            if (dir == 2 || dir == 1) invY = -1.0;
+            if (dir == 3 || dir == 2) invX = -1.0;
+
+            switch (dir) {
+                case 0:
+                case 2:
+                    ps[0] = (struct vec2d) {
+                        p -> start.x,
+                        p -> start.y
+                    };
+                    ps[1] = (struct vec2d) {
+                        p -> start.x,
+                        p -> start.y + p -> rad * invX * 2,
+                    };
+                    ps[2] = (struct vec2d) {
+                        p -> start.x - p -> rad * invX,
+                        p -> start.y + p -> rad * invY,
+                    };
+                    ps[3] = (struct vec2d) {
+                        p -> start.x + p -> rad * invX,
+                        p -> start.y + p -> rad * invY,
+                    };
+                    break;
+                case 1:
+                case 3:
+                    ps[0] = (struct vec2d) {
+                        p -> start.x,
+                        p -> start.y
+                    };
+                    ps[1] = (struct vec2d) {
+                        p -> start.x + p -> rad * invX * 2,
+                        p -> start.y,
+                    };
+                    ps[2] = (struct vec2d) {
+                        p -> start.x + p -> rad * invX,
+                        p -> start.y - p -> rad * invY,
+                    };
+                    ps[3] = (struct vec2d) {
+                        p -> start.x + p -> rad * invX,
+                        p -> start.y + p -> rad * invY,
+                    };
+                    break;
+            }
+
+            p -> end = (p -> flags & 2) ? ps[2] : ps[3];
+            setDirection(dir);
             break;
     }
 
