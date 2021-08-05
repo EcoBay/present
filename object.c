@@ -1,3 +1,4 @@
+#include "tex.h"
 #include "object.h"
 #include "present.h"
 #include <math.h>
@@ -160,6 +161,42 @@ updateBoundingBox(struct primitive *p, struct vec2d *ps, uint8_t c){
     p -> s  = (struct vec2d) { mid.x, min.y };
 }
 
+static void
+prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t *count){
+    int c = 0;
+    for (struct textList *to = t; to; to = to -> next, c++);
+
+    // TODO: Change to lookup variable when symbol table is implemented
+    float ht = 20 / 60.0;
+    float curY = o -> y + ht * (c-1) / 2;
+
+    if (ps && count) {
+        *ps = malloc(2 * c * sizeof(struct vec2d));
+        *count = 2 * c;
+    }
+
+    for (int i = 0; i < c; i++) {
+        struct vec2d dim;
+        getSVGDim(t -> h, &dim);
+
+        dim.x /= 192.0;
+        dim.y /= 192.0;
+
+        t -> nw.y = curY + dim.y / 2;
+        t -> nw.x = o -> x - dim.x / 2;
+
+        if (ps && count) {
+            (*ps)[i * 2] = t -> nw;
+            (*ps)[i * 2 + 1].x = t -> nw.x + dim.x;
+            (*ps)[i * 2 + 1].y = t -> nw.y - dim.y;
+        }
+
+        curY -= ht;
+        t = t -> next;
+    }
+}
+
+
 void
 preparePrimitive(struct primitive *p){
     struct location *l;
@@ -311,6 +348,10 @@ preparePrimitive(struct primitive *p){
             p -> end = (p -> flags & 2) ? ps[2] : ps[3];
             setDirection(dir);
             break;
+        case PRIM_TEXT_LIST:
+            prepareTextList(p -> txt, &p -> start, &ps, &count);
+            p -> end = p -> start;
+            break;
     }
 
     updateBoundingBox(p, ps, count);
@@ -322,6 +363,7 @@ preparePrimitive(struct primitive *p){
 void
 initPresentation(){
     g_presentation = malloc(sizeof(struct presentation));
+    g_presentation -> scenes = NULL;
 }
 
 void
@@ -383,7 +425,7 @@ getLastSegment(struct primitive *p){
 }
 
 struct textList*
-addTextList(char *s, uint8_t positioning, struct textList *t){
+addTextList(RsvgHandle *h, uint8_t positioning, struct textList *t){
     struct textList* t1 = getLast(t);
 
     if (!t1) {
@@ -395,7 +437,7 @@ addTextList(char *s, uint8_t positioning, struct textList *t){
     }
     
     t1 -> next = NULL;
-    t1 -> s = s;
+    t1 -> h = h;
     t1 -> positioning = positioning;
 
     return t;

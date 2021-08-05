@@ -1,3 +1,4 @@
+#include "tex.h"
 #include "draw.h"
 #include "object.h"
 #include <cairo.h>
@@ -13,7 +14,7 @@ const int FRAMERATE = 24;
 const int DPI = 96;
 const char *OUTNAME = "test.mp4";
 
-static inline void
+static void
 drawRectangle(cairo_t *cr, struct primitive *p){
     cairo_rectangle(cr,
             p -> nw.x, p -> nw.y,
@@ -23,7 +24,7 @@ drawRectangle(cairo_t *cr, struct primitive *p){
     cairo_stroke(cr);
 }
 
-static inline void
+static void
 drawEllipse(cairo_t *cr, struct primitive *p){
     cairo_matrix_t save_matrix;
     cairo_get_matrix(cr, &save_matrix);
@@ -40,7 +41,7 @@ drawEllipse(cairo_t *cr, struct primitive *p){
     cairo_stroke(cr);
 }
 
-static inline void
+static void
 drawCircle(cairo_t *cr, struct primitive *p){
     cairo_new_path(cr);
     cairo_arc(cr,
@@ -53,7 +54,7 @@ drawCircle(cairo_t *cr, struct primitive *p){
     cairo_stroke(cr);
 }
 
-static inline void
+static void
 drawArrowhead(cairo_t *cr, struct vec2d* o, float angle){
     cairo_matrix_t save_matrix;
     cairo_get_matrix(cr, &save_matrix);
@@ -72,7 +73,7 @@ drawArrowhead(cairo_t *cr, struct vec2d* o, float angle){
     cairo_set_matrix(cr, &save_matrix);
 }
 
-static inline float
+static float
 getRotation(float x, float y){
     float theta = atanf(y / x);
     if (x < 0) theta += M_PI;
@@ -83,7 +84,7 @@ getRotation(float x, float y){
     return theta;
 }
 
-static inline void
+static void
 drawLineArrowhead(cairo_t *cr, struct primitive *p){
     struct vec2d l0 = p -> start;
     struct vec2d l1 = { p -> segments -> x, p -> segments -> y };
@@ -103,7 +104,7 @@ drawLineArrowhead(cairo_t *cr, struct primitive *p){
     }
 }
 
-static inline void
+static void
 drawLine(cairo_t *cr, struct primitive *p){
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
@@ -118,7 +119,7 @@ drawLine(cairo_t *cr, struct primitive *p){
     drawLineArrowhead(cr, p);
 }
 
-static inline void
+static void
 drawSpline(cairo_t *cr, struct primitive *p){
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
@@ -148,7 +149,23 @@ drawSpline(cairo_t *cr, struct primitive *p){
     drawLineArrowhead(cr, p);
 }
 
-static inline void
+static void
+drawTextList(cairo_t *cr, struct textList *t){
+    cairo_matrix_t save_matrix;
+    cairo_get_matrix(cr, &save_matrix);
+
+    while (t) {
+        cairo_translate(cr, t -> nw.x, t -> nw.y);
+        cairo_scale(cr, 1.0 / DPI, -1.0 / DPI);
+
+        rsvg_handle_render_cairo(t -> h, cr);
+
+        cairo_set_matrix(cr, &save_matrix);
+        t = t -> next;
+    }
+}
+
+static void
 drawArc(cairo_t *cr, struct primitive *p){
     cairo_new_path(cr);
 
@@ -178,7 +195,7 @@ drawArc(cairo_t *cr, struct primitive *p){
     }
 }
 
-static inline void
+static void
 renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     struct primitive *p = e -> a.pr;
@@ -191,13 +208,13 @@ renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
             drawCircle(cr, p); break;
         case PRIM_ARC:
             drawArc(cr, p); break;
-            break;
         case PRIM_LINE:
         case PRIM_ARROW:
             drawLine(cr, p); break;
         case PRIM_SPLINE:
             drawSpline(cr, p); break;
     }
+    drawTextList(cr, p -> txt);
 };
 
 static void
@@ -229,15 +246,14 @@ renderPresentation(){
     cairo_t *cr = cairo_create(surface);
     uint8_t *buf = cairo_image_surface_get_data(surface);
 
-    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    cairo_paint(cr);
-
     cairo_translate(cr, WIDTH / 2, HEIGHT / 2);
     cairo_scale(cr, DPI, -DPI);
 
     for (struct scene *s = g_presentation -> scenes; s; s = s -> next) {
         for (struct keyframe *k = s -> keyframes; k; k = k -> next) {
             for (int i = 0; i < k -> duration * FRAMERATE; i++) {
+                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+                cairo_paint(cr);
                 for (struct event *e = k -> events; e; e = e -> next) {
                     renderEvent(surface, cr, e);
                 }
@@ -246,7 +262,7 @@ renderPresentation(){
         }
     }
 
-
     pclose(ffmpeg);
+    cleanTexDir();
 };
 

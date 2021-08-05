@@ -1,6 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <librsvg/rsvg.h>
 #include <stdint.h>
 #include <cairo.h>
 
@@ -47,7 +48,8 @@ struct color {
 struct textList {
     struct textList *next;
     uint8_t positioning;
-    char *s;
+    RsvgHandle* h;
+    struct vec2d nw;
 };
 
 struct primitive {
@@ -131,5 +133,5 @@ void setCursor(struct vec2d*);
 void getCursor(struct vec2d*);
 
 struct location* getLastSegment(struct primitive*);
-struct textList* addTextList(char*, uint8_t, struct textList*);
+struct textList* addTextList(RsvgHandle*, uint8_t, struct textList*);
 #endif

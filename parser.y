@@ -1,4 +1,5 @@
 %{
+#include "tex.h"
 #include "object.h"
 #include "present.h"
 #include <stddef.h>
@@ -218,11 +219,27 @@ primitive: BOX
 
 text_list: TEXT
             {
-                $$ = addTextList($1, 0, NULL);
+                char *id = createTex($1, 20);
+                if (tex2SVG(id)) {
+                    yyerror("Error: Cannot create text \"%s\"\n", $1);
+                    exit(EXIT_FAILURE);
+                }
+                RsvgHandle *h = getSVGHandler(id);;
+                $$ = addTextList(h, 0, NULL);
+                free($1);
+                free(id);
             }
          | text_list TEXT
             {
-                $$ = addTextList($2, 0, $1);
+                char *id = createTex($2, 20);
+                if (tex2SVG(id)) {
+                    yyerror("Error: Cannot create text \"%s\"\n", $2);
+                    exit(EXIT_FAILURE);
+                }
+                RsvgHandle *h = getSVGHandler(id);;
+                $$ = addTextList(h, 0, $1);
+                free($2);
+                free(id);
             }
 ;
 
