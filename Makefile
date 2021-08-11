@@ -5,9 +5,9 @@ MYLFLAGS=`pkg-config --libs librsvg-2.0 cairo`
 MYCFLAGS=`pkg-config --cflags librsvg-2.0 cairo` -I$(IDIR)
 LIBS=-lfl
 
-_DEPS = present.h object.h draw.h tex.h
+_DEPS = present.h object.h draw.h tex.h symtable.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
-_OBJ = present.lex.o present.tab.o present.o object.o draw.o tex.o
+_OBJ = present.lex.o present.tab.o present.o object.o draw.o tex.o symtable.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: parser lexer present

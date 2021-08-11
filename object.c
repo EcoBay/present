@@ -1,6 +1,8 @@
 #include "tex.h"
+#include "draw.h"
 #include "object.h"
 #include "present.h"
+#include "symtable.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +24,7 @@ getLast(void *i){
 
 void
 newScene(){
+    pushTable();
     struct scene *s = malloc(sizeof(struct scene));
     s -> next = NULL;
     s -> keyframes = NULL;
@@ -38,6 +41,7 @@ newScene(){
 
 void
 newKeyframe(float duration, enum easingFunction easingFunc){
+    pushTable();
     struct keyframe *k = malloc(sizeof(struct keyframe));
     k -> next = NULL;
     k -> events = NULL;
@@ -166,8 +170,15 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t 
     int c = 0;
     for (struct textList *to = t; to; to = to -> next, c++);
 
-    // TODO: Change to lookup variable when symbol table is implemented
-    float ht = 20 / 60.0;
+    struct symbol *s = lookup("vs");
+    float ht;
+    if (s -> t == SYM_DOUBLE) {
+        ht = s -> val.d / DPI;
+    } else {
+        fprintf(stderr, "Error: \"vs\" variable must be double\n");
+        exit(EXIT_FAILURE);
+    }
+
     float curY = o -> y + ht * (c-1) / 2;
 
     if (ps && count) {
@@ -274,7 +285,7 @@ preparePrimitive(struct primitive *p){
                     case 0: l -> y += e; break;
                     case 1: l -> x += e; break;
                     case 2: l -> y -= e; break;
-                    case 3: l -> y -= e; break;
+                    case 3: l -> x -= e; break;
                 }
             };
 

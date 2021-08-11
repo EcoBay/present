@@ -8,10 +8,10 @@
 
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 
-const int WIDTH = 960;
-const int HEIGHT = 720;
-const int FRAMERATE = 24;
-const int DPI = 96;
+int WIDTH = 960;
+int HEIGHT = 720;
+int DPI = 96;
+const static int FRAMERATE = 24;
 const char *OUTNAME = "test.mp4";
 
 static void
