@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int d = 3;
-static float x = 0.0, y = 0.0;
-
 const struct {
     char *sym;
     float val;

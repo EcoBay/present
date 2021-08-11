@@ -4,16 +4,6 @@
 #include "present.h"
 #include "symtable.h"
 #include <stddef.h>
-
-#define GET_FLOAT_SYM(Y, X) Y = lookup(X);                              \
-    if (!Y) {                                                           \
-        yyerror("Error: \"" X "\" variable used before assignment\n");  \
-        exit(EXIT_FAILURE);                                             \
-    }                                                                   \
-    if (Y -> t != SYM_DOUBLE) {                                         \
-        yyerror("Error: \"" X "\" variable must be double\n");          \
-        exit(EXIT_FAILURE);                                             \
-    }
 %}
 
 

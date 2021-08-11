@@ -1,12 +1,13 @@
 #include "tex.h"
 #include "draw.h"
 #include "object.h"
+#include "symtable.h"
 #include <cairo.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
 int WIDTH = 960;
 int HEIGHT = 720;
@@ -62,10 +63,16 @@ drawArrowhead(cairo_t *cr, struct vec2d* o, float angle){
     cairo_translate(cr, o -> x, o -> y);
     cairo_rotate(cr, angle);
 
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "arrowht");
+    float ht = -s -> val.d;
+    GET_FLOAT_SYM(s, "arrowwid");
+    float wid = s -> val.d / 2.0;
+
     cairo_new_path(cr);
-    cairo_move_to(cr, -1.0 / 10, -1.0 / 32);
+    cairo_move_to(cr, ht, -wid);
     cairo_line_to(cr, 0, 0);
-    cairo_line_to(cr, -1.0 / 10,  1.0 / 32);
+    cairo_line_to(cr, ht,  wid);
     cairo_close_path(cr);
 
     cairo_fill(cr);
@@ -232,7 +239,8 @@ renderPresentation(){
     snprintf(ffmpeg_cmd, 256,
             "ffmpeg -r %d -f rawvideo -pix_fmt bgra "
             "-s %dx%d -i - -threads 0 -preset fast "
-            "-y -pix_fmt yuv420p -crf 21 %s",
+            "-y -pix_fmt yuv420p -crf 21 %s "
+            "-hide_banner -loglevel error " ,
             FRAMERATE, WIDTH, HEIGHT, OUTNAME);
 
     FILE *ffmpeg = popen(ffmpeg_cmd, "w");

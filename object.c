@@ -170,15 +170,9 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t 
     int c = 0;
     for (struct textList *to = t; to; to = to -> next, c++);
 
-    struct symbol *s = lookup("vs");
-    float ht;
-    if (s -> t == SYM_DOUBLE) {
-        ht = s -> val.d / DPI;
-    } else {
-        fprintf(stderr, "Error: \"vs\" variable must be double\n");
-        exit(EXIT_FAILURE);
-    }
-
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "vs");
+    float ht = s -> val.d / DPI;
     float curY = o -> y + ht * (c-1) / 2;
 
     if (ps && count) {

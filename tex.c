@@ -1,4 +1,5 @@
 #include "tex.h"
+#include "symtable.h"
 #include <time.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -40,8 +41,14 @@ createTex(char *s, int pt){
     fputs("\\documentclass[10pt]{standalone}\n", texFD);
     fputs("\\begin{document}\n", texFD);
 
+    struct symbol *sym;
+    GET_FLOAT_SYM(sym, "maxpswid");
+    int maxWid = (int) sym -> val.d;
+    int wid = MIN((int) (pt * 1.2), maxWid);
+
+
     fprintf(texFD, "{\\fontsize{%d}{%d} \\selectfont %s}\n",
-            pt, (int) (pt * 1.2), s);
+            pt, wid, s);
 
     fputs("\\end{document}\n", texFD);
     fclose(texFD);
