@@ -38,11 +38,11 @@ struct symTable* popTable();
 #define GET_FLOAT_SYM(Y, X) Y = lookup(X);                                      \
     if (!Y) {                                                                   \
         fprintf(stderr,"Error: \"" X "\" variable used before assignment\n");   \
-        exit(EXIT_FAILURE);                                                     \
+        abort();                                                                \
     }                                                                           \
     if (Y -> t != SYM_DOUBLE) {                                                 \
         fprintf(stderr,"Error: \"" X "\" variable must be double\n");           \
-        exit(EXIT_FAILURE);                                                     \
+        abort();                                                                \
     }
 
 #endif

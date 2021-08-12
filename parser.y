@@ -321,7 +321,7 @@ text_list: TEXT
                 char *id = createTex($1, s -> val.d);
                 if (tex2SVG(id)) {
                     yyerror("Error: Cannot create text \"%s\"\n", $1);
-                    exit(EXIT_FAILURE);
+                    abort();
                 }
                 RsvgHandle *h = getSVGHandler(id);;
                 $$ = addTextList(h, 0, NULL);
@@ -333,7 +333,7 @@ text_list: TEXT
                 char *id = createTex($2, 20);
                 if (tex2SVG(id)) {
                     yyerror("Error: Cannot create text \"%s\"\n", $2);
-                    exit(EXIT_FAILURE);
+                    abort();
                 }
                 RsvgHandle *h = getSVGHandler(id);;
                 $$ = addTextList(h, 0, $1);

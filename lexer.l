@@ -46,14 +46,14 @@
                     "Unexpected character %c at line no. %d\n",
                     *yytext, yylineno
                 );
-                exit(EXIT_FAILURE);
+                abort();
             }
 %%
 
 void yyerror(char *s, ...){
     if(!strcmp(s, "syntax error")){
         fprintf(stderr, "Syntax error at line no. %d\n", yylineno);
-        exit(EXIT_FAILURE);
+        abort();
     }else{
         va_list ap;
 

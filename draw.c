@@ -246,7 +246,7 @@ renderPresentation(){
     FILE *ffmpeg = popen(ffmpeg_cmd, "w");
     if (!ffmpeg) {
         fprintf(stderr, "Error: cannot open ffmpeg instance\n");
-        exit(EXIT_FAILURE);
+        abort();
     }
 
     cairo_surface_t *surface = cairo_image_surface_create(

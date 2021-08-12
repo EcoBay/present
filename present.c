@@ -1,3 +1,4 @@
+#include "tex.h"
 #include "draw.h"
 #include "object.h"
 #include "present.h"
@@ -6,6 +7,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
 
 const struct {
     char *sym;
@@ -35,7 +38,21 @@ const struct {
     {"vs", 30}
 };
 
+static void catchErr(int signo) {
+    cleanTexDir();
+    if (signo == SIGINT) {
+        write(STDERR_FILENO, "Interrupted\n", 12);
+    }
+    exit(EXIT_FAILURE);
+}
+
 int main(int argc, char **argv){
+    struct sigaction sa;
+    sa.sa_handler = catchErr;
+
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGINT, &sa,  NULL);
+
     pushTable();
     int c = sizeof(builtIn) / sizeof(builtIn[0]);
     for (int i = 0; i < c; i++) {

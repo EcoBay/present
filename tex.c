@@ -93,7 +93,7 @@ RsvgHandle* getSVGHandler(char *id){
 
     if (!h) {
         fprintf(stderr, "Error: cannot open svg handler\n");
-        exit(EXIT_FAILURE);
+        abort();
     }
 
     return h;

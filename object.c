@@ -402,7 +402,7 @@ setCursor(struct vec2d* x){
         memcpy(&s -> cursor, x, sizeof(struct vec2d));
     } else {
         fprintf(stderr, "Error: no scene at line no %d\n", yylineno);
-        exit(EXIT_FAILURE);
+        abort();
     }
 }
 
