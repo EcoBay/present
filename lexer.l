@@ -36,6 +36,12 @@
 
 "cw"        { return CW; }
 
+center      { return CENTER; }
+ljust       { return LJUST; }
+rjust       { return RJUST; }
+above       { return ABOVE; }
+below       { return BELOW; }
+
 "\\#".*
 [ \t]
 \n          { return EOL; }

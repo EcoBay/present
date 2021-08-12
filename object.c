@@ -184,11 +184,31 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t 
         struct vec2d dim;
         getSVGDim(t -> h, &dim);
 
-        dim.x /= 192.0;
-        dim.y /= 192.0;
+        dim.x /= DPI;
+        dim.y /= DPI;
 
-        t -> nw.y = curY + dim.y / 2;
-        t -> nw.x = o -> x - dim.x / 2;
+        switch (t -> positioning) {
+            case 0: //center
+                t -> nw.y = curY + dim.y / 2;
+                t -> nw.x = o -> x - dim.x / 2;
+                break;
+            case 1: //ljust
+                t -> nw.y = curY + dim.y / 2;
+                t -> nw.x = o -> x;
+                break;
+            case 2: //rjust
+                t -> nw.y = curY + dim.y / 2;
+                t -> nw.x = o -> x - dim.x;
+                break;
+            case 3: //above
+                t -> nw.y = curY + dim.y;
+                t -> nw.x = o -> x - dim.x / 2;
+                break;
+            case 4: //below
+                t -> nw.y = curY;
+                t -> nw.x = o -> x - dim.x / 2;
+                break;
+        }
 
         if (ps && count) {
             (*ps)[i * 2] = t -> nw;

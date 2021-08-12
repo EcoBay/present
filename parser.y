@@ -4,6 +4,18 @@
 #include "present.h"
 #include "symtable.h"
 #include <stddef.h>
+
+#define TEXTLIST(Y, S, P, L) struct symbol *s;              \
+    GET_FLOAT_SYM(s, "ps");                                 \
+    char *id = createTex(S, s -> val.d);                    \
+    if (tex2SVG(id)) {                                      \
+        yyerror("Error: Cannot create text \"%s\"\n", S);   \
+        abort();                                            \
+    }                                                       \
+    RsvgHandle *h = getSVGHandler(id);;                     \
+    Y = addTextList(h, P, L);                               \
+    free(S);                                                \
+    free(id)                                                
 %}
 
 
@@ -11,6 +23,7 @@
     char *s;
     struct primitive *p;
     struct textList *t;
+    int i;
 }
 
 /* primitives */
@@ -24,10 +37,14 @@
 %token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
 %token CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
 
+/* text positioning */
+%token CENTER LJUST RJUST ABOVE BELOW
+
 %token EOL
 
 %type <p> primitive
 %type <t> text_list
+%type <i> positioning
 
 %%
 program: statement
@@ -314,32 +331,17 @@ primitive: BOX
             }
 ;
 
-text_list: TEXT
-            {
-                struct symbol *s;
-                GET_FLOAT_SYM(s, "ps");
-                char *id = createTex($1, s -> val.d);
-                if (tex2SVG(id)) {
-                    yyerror("Error: Cannot create text \"%s\"\n", $1);
-                    abort();
-                }
-                RsvgHandle *h = getSVGHandler(id);;
-                $$ = addTextList(h, 0, NULL);
-                free($1);
-                free(id);
-            }
-         | text_list TEXT
-            {
-                char *id = createTex($2, 20);
-                if (tex2SVG(id)) {
-                    yyerror("Error: Cannot create text \"%s\"\n", $2);
-                    abort();
-                }
-                RsvgHandle *h = getSVGHandler(id);;
-                $$ = addTextList(h, 0, $1);
-                free($2);
-                free(id);
-            }
+positioning: CENTER { $$ = 0; }
+           | LJUST  { $$ = 1; }
+           | RJUST  { $$ = 2; }
+           | ABOVE  { $$ = 3; }
+           | BELOW  { $$ = 4; }
+;
+
+text_list: TEXT                         { TEXTLIST($$, $1, 0, NULL); }
+         | TEXT positioning             { TEXTLIST($$, $1, $2, NULL); }
+         | text_list TEXT               { TEXTLIST($$, $2, 0, $1); }
+         | text_list TEXT positioning   { TEXTLIST($$, $2, $3, $1); }
 ;
 
 %%
