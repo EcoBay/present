@@ -36,6 +36,12 @@
 
 "cw"        { return CW; }
 
+"dashed"    { return DASHED; }
+"dotted"    { return DOTTED; }
+"invis"     { return INVIS; }
+"solid"     { return SOLID; }
+"fill"      { return FILL; }
+
 center      { return CENTER; }
 ljust       { return LJUST; }
 rjust       { return RJUST; }

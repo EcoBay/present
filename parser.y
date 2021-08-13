@@ -35,7 +35,7 @@
 
 /* attributes */
 %token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
-%token CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
+%token DASHED CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
 
 /* text positioning */
 %token CENTER LJUST RJUST ABOVE BELOW
@@ -328,6 +328,46 @@ primitive: BOX
             {
                 $$ = $1;
                 $$ -> flags |= 2;
+            }
+        | primitive DASHED
+            {
+                $$ = $1;
+                $$ -> spacing = 0.05;
+
+                $$ -> flags &= ~12;
+                $$ -> flags |= 4;
+            }
+        | primitive DOTTED
+            {
+                $$ = $1;
+                $$ -> spacing = 0.05;
+
+                $$ -> flags &= ~12;
+                $$ -> flags |= 8;
+            }
+        | primitive SOLID
+            {
+                $$ = $1;
+                $$ -> flags &= ~16;
+            }
+        | primitive INVIS
+            {
+                $$ = $1;
+                $$ -> flags |= 16;
+            }
+        | primitive FILL
+            {
+                $$ = $1;
+                $$ -> flags |= 32;
+
+                $$ -> fill = malloc(sizeof(struct color));
+                $$ -> fill -> r = 0;
+                $$ -> fill -> g = 0;
+                $$ -> fill -> b = 0;
+
+                struct symbol *s;
+                GET_FLOAT_SYM(s, "fillval");
+                $$ -> fill -> a = s -> val.d * 255;
             }
 ;
 

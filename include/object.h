@@ -70,12 +70,16 @@ struct primitive {
     struct location *segments;
     struct vec2d *at;
     uint8_t with;
-    float dotted, dashed;
+    float spacing;
     float chop;
     uint8_t arrowStyle;
-    uint8_t flags;
-    /* 1 - hasSegment;
-     * 2 - cw
+    uint32_t flags;
+    /*  1 - hasSegment
+     *  2 - cw
+     *  4 - dashed
+     *  8 - dotted
+     * 16 - invis
+     * 32 - filled
      */
     struct color *fill;
     struct textList *txt;

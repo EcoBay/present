@@ -8,6 +8,22 @@
 #include <math.h>
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#define SET_LINE_STYLE(CR, P) if (P -> flags & 4) { \
+        dashed(CR, P -> spacing);                   \
+    } else if (P -> flags & 8) {                    \
+        dotted(CR, P -> spacing);                   \
+    }
+#define FILL_AND_STROKE(CR, P) if (P -> flags & 32) {           \
+        cairo_set_source_rgba(CR,                               \
+            P -> fill -> r / 255.0, P -> fill -> g / 255.0,     \
+            P -> fill -> b / 255.0, P -> fill -> a / 255.0);    \
+        cairo_fill_preserve(CR);                                \
+    }                                                           \
+    if (!(P -> flags & 16)) {                                   \
+        cairo_set_line_width(CR, 1.0 / DPI);                    \
+        SET_LINE_STYLE(CR, P);                                  \
+        cairo_stroke(CR);                                       \
+    }
 
 int WIDTH = 960;
 int HEIGHT = 720;
@@ -16,13 +32,24 @@ const static int FRAMERATE = 24;
 const char *OUTNAME = "test.mp4";
 
 static void
+dotted(cairo_t *cr, float spacing) {
+    double pat[] = {1.0 / DPI, spacing};
+    cairo_set_dash(cr, pat, 2, 0);
+}
+
+static void
+dashed(cairo_t *cr, float spacing) {
+    double pat[] = {spacing, spacing * 0.5};
+    cairo_set_dash(cr, pat, 2, 0);
+}
+
+static void
 drawRectangle(cairo_t *cr, struct primitive *p){
     cairo_rectangle(cr,
             p -> nw.x, p -> nw.y,
             p -> se.x - p -> nw.x, p -> se.y - p -> nw.y);
 
-    cairo_set_line_width(cr, 1.0 / DPI);
-    cairo_stroke(cr);
+    FILL_AND_STROKE(cr, p);
 }
 
 static void
@@ -37,9 +64,7 @@ drawEllipse(cairo_t *cr, struct primitive *p){
             1, 0, 2 * M_PI);
 
     cairo_set_matrix(cr, &save_matrix);
-
-    cairo_set_line_width(cr, 1.0 / DPI);
-    cairo_stroke(cr);
+    FILL_AND_STROKE(cr, p);
 }
 
 static void
@@ -51,8 +76,7 @@ drawCircle(cairo_t *cr, struct primitive *p){
             0, 2 * M_PI);
     cairo_close_path(cr);
 
-    cairo_set_line_width(cr, 1.0 / DPI);
-    cairo_stroke(cr);
+    FILL_AND_STROKE(cr, p);
 }
 
 static void
@@ -121,6 +145,7 @@ drawLine(cairo_t *cr, struct primitive *p){
     }
 
     cairo_set_line_width(cr, 1.0 / DPI);
+    SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
     drawLineArrowhead(cr, p);
@@ -151,6 +176,7 @@ drawSpline(cairo_t *cr, struct primitive *p){
 
     cairo_line_to(cr, l -> x, l -> y);
     cairo_set_line_width(cr, 1.0 / DPI);
+    SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
     drawLineArrowhead(cr, p);
@@ -192,6 +218,7 @@ drawArc(cairo_t *cr, struct primitive *p){
     }
 
     cairo_set_line_width(cr, 1.0 / DPI);
+    SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
     if ( p -> arrowStyle & 1 ) {
@@ -206,6 +233,7 @@ static void
 renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     struct primitive *p = e -> a.pr;
+
     switch (p -> t) {
         case PRIM_BOX:
             drawRectangle(cr, p); break;
@@ -273,4 +301,3 @@ renderPresentation(){
     pclose(ffmpeg);
     cleanTexDir();
 };
-

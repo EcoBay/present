@@ -101,8 +101,7 @@ newPrimitive(enum primitiveType t){
     p -> segments = NULL;
     p -> at = NULL;
     p -> with = 0;
-    p -> dotted = 0;
-    p -> dashed = 0;
+    p -> spacing = 0;
     p -> chop = 0;
     p -> arrowStyle = 0;
     p -> flags = 0;
