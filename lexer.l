@@ -19,11 +19,6 @@
 "arrow"     { return ARROW; }
 "spline"    { return SPLINE; }
 "move"      { return MOVE; }
-\"([^\\\"]|\\.)*\" {
-                yytext[yyleng - 1] = '\0';
-                yylval.s = strdup(yytext + 1);
-                return TEXT;
-            }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
@@ -63,6 +58,18 @@
                 yylval.d = strtof(yytext, NULL);
                 return NUMBER;
             }
+\"([^\\\"]|\\.)*\" {
+                yytext[yyleng - 1] = '\0';
+                yylval.s = strdup(yytext + 1);
+                return TEXT;
+            }
+#[0-9a-fA-F]{8} |
+#[0-9a-fA-F]{6} |
+#[0-9a-fA-F]{4} |
+#[0-9a-fA-F]{3} {
+                yylval.s = strdup(yytext + 1);
+                return HEXCOLOR;
+            }
 
 "sin"       { return SIN; }
 "cos"       { return COS; }
@@ -75,6 +82,7 @@
 "int"       { return INT; }
 "rand"      { return RAND; }
 "abs"       { return ABS; }
+"rgba"      { return RGBA; }
 
 "\\#".*
 [ \t]

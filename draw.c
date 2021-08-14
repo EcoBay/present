@@ -22,7 +22,10 @@
         cairo_fill_preserve(CR);                                \
     }                                                           \
     if (!(P -> flags & 16)) {                                   \
-        cairo_set_line_width(CR, 1.0 / DPI);                    \
+        struct symbol *s;                                       \
+        GET_FLOAT_SYM(s, "ps");                                 \
+        cairo_set_source_rgb(CR,0, 0, 0);                       \
+        cairo_set_line_width(CR, (s -> val.d) / DPI / 20.0);    \
         SET_LINE_STYLE(CR, P);                                  \
         cairo_stroke(CR);                                       \
     }
@@ -35,7 +38,9 @@ const char *OUTNAME = "test.mp4";
 
 static void
 dotted(cairo_t *cr, float spacing) {
-    double pat[] = {1.0 / DPI, spacing};
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "ps");
+    double pat[] = {(s -> val.d) / DPI / 20.0, spacing};
     cairo_set_dash(cr, pat, 2, 0);
 }
 
@@ -147,7 +152,9 @@ drawLine(cairo_t *cr, struct primitive *p){
         cairo_line_to(cr, l -> x, l -> y);
     }
 
-    cairo_set_line_width(cr, 1.0 / DPI);
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "ps");
+    cairo_set_line_width(cr, (s -> val.d) / DPI / 20.0);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -178,7 +185,9 @@ drawSpline(cairo_t *cr, struct primitive *p){
     }
 
     cairo_line_to(cr, l -> x, l -> y);
-    cairo_set_line_width(cr, 1.0 / DPI);
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "ps");
+    cairo_set_line_width(cr, (s -> val.d) / DPI / 20.0);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -221,7 +230,9 @@ drawArc(cairo_t *cr, struct primitive *p){
                 rad, theta0, theta1);
     }
 
-    cairo_set_line_width(cr, 1.0 / DPI);
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "ps");
+    cairo_set_line_width(cr, (s -> val.d) / DPI / 20.0);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 

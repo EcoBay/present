@@ -19,6 +19,12 @@
     Y = addTextList(h, P, L);                               \
     free(S);                                                \
     free(id)                                                
+
+#define FLOAT_TO_CHAR(Y, X) if (X < 0.0 || X > 1.0) {       \
+        yyerror("Error: invalid rgba value of %.2f\n", X);  \
+        abort();                                            \
+    }                                                       \
+    Y = X * 255
 %}
 
 
@@ -27,7 +33,7 @@
     struct primitive *p;
     int i;
     float d;
-    uint32_t c;
+    struct color *c;
 }
 
 /* primitives */
@@ -44,10 +50,10 @@
 %token CENTER LJUST RJUST ABOVE BELOW
 
 /* build int functions */
-%token SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS
+%token SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS RGBA
 
 /* values */
-%token <s> TEXT 
+%token <s> TEXT HEXCOLOR
 %token <d> NUMBER
 
 %token EOL
@@ -55,6 +61,7 @@
 %type <p> primitive
 %type <i> positioning
 %type <d> expr
+%type <c> color
 
 %left TEXT
 %left LJUST RJUST ABOVE BELOW
@@ -380,7 +387,6 @@ primitive: BOX
                         l = getLastSegment($$);
                         float e = $$ -> expr;
 
-                        struct symbol *s;
                         switch ($$ -> direction) {
                             case 0: l -> y += e; break;
                             case 1: l -> x += e; break;
@@ -475,6 +481,12 @@ primitive: BOX
                 struct symbol *s;
                 GET_FLOAT_SYM(s, "fillval");
                 $$ -> fill -> a = s -> val.d * 255;
+            }
+        | primitive FILL color
+            {
+                $$ = $1;
+                $$ -> flags |= 32;
+                $$ -> fill = $3;
             }
          | primitive TEXT positioning
             {
@@ -649,5 +661,39 @@ expr: NUMBER
         { $$ = fabsf($3); }
     | '!' expr
         { $$ = ($2 == 0.0); }
+;
+
+color: HEXCOLOR
+        {
+            $$ = malloc(sizeof(struct color));
+
+            char c[9];
+            strncpy(c, $1, 9);
+
+            int len = strlen($1);
+            if (len < 6) {
+                for (int i = 0; i < len; i++) {
+                    c[i * 2] = $1[i];
+                    c[i * 2 + 1] = $1[i];
+                }
+                len *= 2;
+            }
+            free($1);
+            if (len < 8) {
+                c[6] = 'F';
+                c[7] = 'F';
+            }
+
+            uint32_t i = strtoul(c, NULL, 16);
+            *(uint32_t*) $$ = i;
+        }
+     | RGBA '(' expr ',' expr ',' expr ',' expr ')'
+        {
+            $$ = malloc(sizeof(struct color));
+            FLOAT_TO_CHAR($$ -> r, $3);
+            FLOAT_TO_CHAR($$ -> g, $5);
+            FLOAT_TO_CHAR($$ -> b, $7);
+            FLOAT_TO_CHAR($$ -> a, $9);
+        }
 ;
 %%
