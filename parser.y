@@ -79,7 +79,7 @@ program: statement
        | program ';' statement
 ;
 
-statement:
+statement: %empty
          | primitive        
             {
                 preparePrimitive($1);
@@ -209,14 +209,6 @@ primitive: BOX
                 }
 
                 $$ -> expr = s -> val.d;
-                getCursor(&$$ -> start);
-            }
-        | TEXT
-            {
-                $$ = newPrimitive(PRIM_TEXT_LIST);
-                TEXTLIST($$ -> txt, $1, 0, NULL);
-
-                $$ -> direction = getDirection();
                 getCursor(&$$ -> start);
             }
         | TEXT positioning
@@ -484,14 +476,6 @@ primitive: BOX
                 GET_FLOAT_SYM(s, "fillval");
                 $$ -> fill -> a = s -> val.d * 255;
             }
-         | primitive TEXT
-            {
-                $$ = $1;
-                TEXTLIST($$ -> txt, $2, 0, $$ -> txt);
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
-            }
          | primitive TEXT positioning
             {
                 $$ = $1;
@@ -525,15 +509,38 @@ primitive: BOX
          | primitive expr               %prec HT
             {
                 $$ = $1;
-                $$ -> expr = $2; 
+                $$ -> expr = $2;
             }
 ;
 
-positioning: CENTER { $$ = 0; }
-           | LJUST  { $$ = 1; }
-           | RJUST  { $$ = 2; }
-           | ABOVE  { $$ = 3; }
-           | BELOW  { $$ = 4; }
+positioning: %empty
+            { $$ = 0; }
+           | positioning CENTER
+            { $$ = 0; }
+           | positioning LJUST
+            {
+                $$ = $1;
+                $$ &= ~3;
+                $$ |= 1;
+            }
+           | positioning RJUST
+            {
+                $$ = $1;
+                $$ &= ~3;
+                $$ |= 2;
+            }
+           | positioning ABOVE
+            {
+                $$ = $1;
+                $$ &= ~12;
+                $$ |= 4;
+            }
+           | positioning BELOW
+            {
+                $$ = $1;
+                $$ &= ~12;
+                $$ |= 8;
+            }
 ;
 
 expr: NUMBER

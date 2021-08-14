@@ -188,28 +188,22 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t 
         dim.x /= DPI;
         dim.y /= DPI;
 
-        switch (t -> positioning) {
-            case 0: //center
-                t -> nw.y = curY + dim.y / 2;
-                t -> nw.x = o -> x - dim.x / 2;
-                break;
-            case 1: //ljust
-                t -> nw.y = curY + dim.y / 2;
-                t -> nw.x = o -> x;
-                break;
-            case 2: //rjust
-                t -> nw.y = curY + dim.y / 2;
-                t -> nw.x = o -> x - dim.x;
-                break;
-            case 3: //above
-                t -> nw.y = curY + dim.y;
-                t -> nw.x = o -> x - dim.x / 2;
-                break;
-            case 4: //below
-                t -> nw.y = curY;
-                t -> nw.x = o -> x - dim.x / 2;
-                break;
-        }
+        t -> nw.x = o -> x - dim.x / 2;
+        t -> nw.y = curY + dim.y / 2;
+
+        if (t -> positioning & 1) {
+            t -> nw.x += dim.x / 2;
+        } //ljust
+        else if (t -> positioning & 2) {
+            t -> nw.x -= dim.x / 2;
+        } //rjust
+
+        if (t -> positioning & 4) {
+            t -> nw.y += dim.y / 2;
+        } //above
+        else if (t -> positioning & 8) {
+            t -> nw.y -= dim.y / 2;
+        } //below
 
         if (ps && count) {
             (*ps)[i * 2] = t -> nw;
