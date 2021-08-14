@@ -3,6 +3,7 @@
 #include "present.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 %}
 
@@ -28,6 +29,7 @@
 "down"      { return DOWN; }
 "left"      { return LEFT; }
 "right"     { return RIGHT; }
+"by"        { return BY; }
 "then"      { return THEN; }
 
 "<-"        { return LARROW; }
@@ -42,16 +44,52 @@
 "solid"     { return SOLID; }
 "fill"      { return FILL; }
 
-center      { return CENTER; }
-ljust       { return LJUST; }
-rjust       { return RJUST; }
-above       { return ABOVE; }
-below       { return BELOW; }
+"center"    { return CENTER; }
+"ljust"     { return LJUST; }
+"rjust"     { return RJUST; }
+"above"     { return ABOVE; }
+"below"     { return BELOW; }
+
+"ht"        |
+"height"    { return HT; }
+"wid"       |
+"width"     { return WID; }
+"rad"       |
+"radius"    { return RAD; }
+"diam"      |
+"daimeter"  { return DIAM; }
+
+([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
+                yylval.d = strtof(yytext, NULL);
+                return NUMBER;
+            }
+
+"sin"       { return SIN; }
+"cos"       { return COS; }
+"atan2"     { return ATAN2; }
+"log"       { return LOG; }
+"exp"       { return EXP; }
+"sqrt"      { return SQRT; }
+"max"       { return MAX; }
+"min"       { return MIN; }
+"int"       { return INT; }
+"rand"      { return RAND; }
+"abs"       { return ABS; }
 
 "\\#".*
 [ \t]
 \n          { return EOL; }
-";"         { return *yytext; }
+";"         |
+"+"         |
+"-"         |
+"*"         |
+"/"         |
+"%"         |
+"!"         |
+"^"         |
+"("         |
+")"         |
+","         { return *yytext; }
 
 .           {
                 yyerror(

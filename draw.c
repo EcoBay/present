@@ -12,6 +12,8 @@
         dashed(CR, P -> spacing);                   \
     } else if (P -> flags & 8) {                    \
         dotted(CR, P -> spacing);                   \
+    } else {                                        \
+        cairo_set_dash(CR, NULL, 0, 0);             \
     }
 #define FILL_AND_STROKE(CR, P) if (P -> flags & 32) {           \
         cairo_set_source_rgba(CR,                               \
@@ -69,10 +71,11 @@ drawEllipse(cairo_t *cr, struct primitive *p){
 
 static void
 drawCircle(cairo_t *cr, struct primitive *p){
+    float rad = (p -> flags & 64) ? p -> rad : p -> expr;
+
     cairo_new_path(cr);
     cairo_arc(cr,
-            p -> c.x, p -> c.y,
-            p -> rad,
+            p -> c.x, p -> c.y, rad,
             0, 2 * M_PI);
     cairo_close_path(cr);
 
@@ -202,6 +205,7 @@ static void
 drawArc(cairo_t *cr, struct primitive *p){
     cairo_new_path(cr);
 
+    float rad = (p -> flags & 64) ? p -> rad : p -> expr;
     float theta0 = getRotation(p -> start.x - p -> c.x, p -> start.y - p -> c.y);
     float theta1 = getRotation(p -> end.x - p -> c.x, p -> end.y - p -> c.y);
     float cw = 1;
@@ -209,12 +213,12 @@ drawArc(cairo_t *cr, struct primitive *p){
     if (p -> flags & 2) {
         cairo_arc_negative(cr,
                 p -> c.x, p -> c.y,
-                p -> rad, theta0, theta1);
+                rad, theta0, theta1);
         cw = -1;
     } else {
         cairo_arc(cr,
                 p -> c.x, p -> c.y,
-                p -> rad, theta0, theta1);
+                rad, theta0, theta1);
     }
 
     cairo_set_line_width(cr, 1.0 / DPI);

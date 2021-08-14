@@ -80,6 +80,7 @@ struct primitive {
      *  8 - dotted
      * 16 - invis
      * 32 - filled
+     * 64 - hasRadius
      */
     struct color *fill;
     struct textList *txt;

@@ -122,7 +122,9 @@ chopBoundingBox(struct primitive *p){
     }
 
     float wid = p -> wid / 2, ht = p -> ht / 2;
-    if(p -> t == PRIM_CIRCLE) wid = ht = p -> rad;
+
+    float rad = (p -> flags & 64) ? p -> rad : p -> expr;
+    if(p -> t == PRIM_CIRCLE) wid = ht = rad;
 
     p -> ne.y -= ht  * 0.2928932188;
     p -> ne.x -= wid * 0.2928932188;
@@ -226,15 +228,16 @@ preparePrimitive(struct primitive *p){
     struct location *l;
     struct vec2d *ps;
     uint8_t count;
+    float rad = (p -> flags & 64) ? p -> rad : p -> expr;
 
     switch (p -> t) {
         case PRIM_BOX:
         case PRIM_ELLIPSE:
         case PRIM_CIRCLE:
             float wid = (p -> t == PRIM_CIRCLE) ?
-                p -> rad * 2 : p -> wid;
+                rad * 2 : p -> wid;
             float ht  = (p -> t == PRIM_CIRCLE) ?
-                p -> rad * 2 : p -> ht;
+                rad * 2 : p -> ht;
 
             ps = malloc(4 * sizeof(struct vec2d));
             count = 4;
@@ -337,15 +340,15 @@ preparePrimitive(struct primitive *p){
                     };
                     ps[1] = (struct vec2d) {
                         p -> start.x,
-                        p -> start.y + p -> rad * invX * 2,
+                        p -> start.y + rad * invX * 2,
                     };
                     ps[2] = (struct vec2d) {
-                        p -> start.x - p -> rad * invX,
-                        p -> start.y + p -> rad * invY,
+                        p -> start.x - rad * invX,
+                        p -> start.y + rad * invY,
                     };
                     ps[3] = (struct vec2d) {
-                        p -> start.x + p -> rad * invX,
-                        p -> start.y + p -> rad * invY,
+                        p -> start.x + rad * invX,
+                        p -> start.y + rad * invY,
                     };
                     break;
                 case 1:
@@ -355,16 +358,16 @@ preparePrimitive(struct primitive *p){
                         p -> start.y
                     };
                     ps[1] = (struct vec2d) {
-                        p -> start.x + p -> rad * invX * 2,
+                        p -> start.x + rad * invX * 2,
                         p -> start.y,
                     };
                     ps[2] = (struct vec2d) {
-                        p -> start.x + p -> rad * invX,
-                        p -> start.y - p -> rad * invY,
+                        p -> start.x + rad * invX,
+                        p -> start.y - rad * invY,
                     };
                     ps[3] = (struct vec2d) {
-                        p -> start.x + p -> rad * invX,
-                        p -> start.y + p -> rad * invY,
+                        p -> start.x + rad * invX,
+                        p -> start.y + rad * invY,
                     };
                     break;
             }
@@ -379,6 +382,10 @@ preparePrimitive(struct primitive *p){
     }
 
     updateBoundingBox(p, ps, count);
+    if (p -> t < PRIM_TEXT_LIST) {
+        prepareTextList(p -> txt, &p -> c, NULL, NULL);
+    }
+
     chopBoundingBox(p);
     free(ps);
     setCursor(&p -> end);

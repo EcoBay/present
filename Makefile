@@ -3,7 +3,7 @@ ODIR=obj
 
 MYLFLAGS=`pkg-config --libs librsvg-2.0 cairo`
 MYCFLAGS=`pkg-config --cflags librsvg-2.0 cairo` -I$(IDIR)
-LIBS=-lfl
+LIBS=-lfl -lm
 
 _DEPS = present.h object.h draw.h tex.h symtable.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
