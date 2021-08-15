@@ -51,6 +51,7 @@ newKeyframe(float duration, enum easingFunction easingFunc){
     if(!g_presentation -> scenes) {
         fprintf(stderr, "Warning: adding default scene before "
                 "line no. %d\n", yylineno);
+        newScene();
     }
 
     struct scene *s = getLast(g_presentation -> scenes);

@@ -21,15 +21,15 @@ enum primitiveType {
 
 enum easingFunction {
     EASE_LINEAR,
+    EASE_SINE,
     EASE_IN_SINE,
     EASE_OUT_SINE,
-    EASE_IN_OUT_SINE,
+    EASE_QUAD,
     EASE_IN_QUAD,
     EASE_OUT_QUAD,
-    EASE_IN_OUT_QUAD,
+    EASE_CUBIC,
     EASE_IN_CUBIC,
-    EASE_OUT_CUBIC,
-    EASE_IN_OUT_CUBIC
+    EASE_OUT_CUBIC
 };
 
 struct vec2d {

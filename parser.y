@@ -39,6 +39,9 @@
 /* primitives */
 %token BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE MOVE
 
+/* keywords */
+%token FOR
+
 /* directions */
 %token UP DOWN LEFT RIGHT
 
@@ -56,11 +59,22 @@
 %token <s> TEXT HEXCOLOR
 %token <d> NUMBER
 
+/* present extensions */
+%token KEYFRAME SCENE
+
+/* easing function */
+%token LINEAR SINE QUADRATIC CUBIC
+%token IN OUT
+
+/* time units */
+%token SECONDS MILLISECONDS MINUTES
+
+
 %token EOL
 
 %type <p> primitive
-%type <i> positioning
-%type <d> expr
+%type <i> positioning easing
+%type <d> expr duration
 %type <c> color
 
 %left TEXT
@@ -92,7 +106,33 @@ statement: %empty
                 preparePrimitive($1);
                 newDrawEvent($1);
             }
-         | direction_stmt  
+         | direction_stmt
+         | keyframe_stmt
+;
+
+keyframe_stmt: easing KEYFRAME
+                { newKeyframe(1.0, $1); }
+             | easing KEYFRAME FOR duration
+                { newKeyframe($4, $1); }
+;
+
+easing: %empty          { $$ = EASE_LINEAR; }
+      | LINEAR          { $$ = EASE_LINEAR; }
+      | SINE            { $$ = EASE_SINE; }
+      | SINE IN         { $$ = EASE_IN_SINE; }
+      | SINE OUT        { $$ = EASE_OUT_SINE; }
+      | QUADRATIC       { $$ = EASE_QUAD; }
+      | QUADRATIC IN    { $$ = EASE_IN_QUAD; }
+      | QUADRATIC OUT   { $$ = EASE_OUT_QUAD; }
+      | CUBIC           { $$ = EASE_CUBIC; }
+      | CUBIC IN        { $$ = EASE_IN_CUBIC; }
+      | CUBIC OUT       { $$ = EASE_OUT_CUBIC; }
+;
+
+duration: expr              { $$ = $1; }
+        | expr SECONDS      { $$ = $1; }
+        | expr MILLISECONDS { $$ = $1 / 1000.0; }
+        | expr MINUTES      { $$ = $1 * 60.0; }
 ;
 
 direction_stmt: UP      { setDirection(0); }

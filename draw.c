@@ -22,10 +22,8 @@
         cairo_fill_preserve(CR);                                \
     }                                                           \
     if (!(P -> flags & 16)) {                                   \
-        struct symbol *s;                                       \
-        GET_FLOAT_SYM(s, "ps");                                 \
         cairo_set_source_rgb(CR,0, 0, 0);                       \
-        cairo_set_line_width(CR, (s -> val.d) / DPI / 20.0);    \
+        cairo_set_line_width(CR, 1.0 / DPI);                    \
         SET_LINE_STYLE(CR, P);                                  \
         cairo_stroke(CR);                                       \
     }
@@ -38,9 +36,7 @@ const char *OUTNAME = "test.mp4";
 
 static void
 dotted(cairo_t *cr, float spacing) {
-    struct symbol *s;
-    GET_FLOAT_SYM(s, "ps");
-    double pat[] = {(s -> val.d) / DPI / 20.0, spacing};
+    double pat[] = {1.0 / DPI, spacing};
     cairo_set_dash(cr, pat, 2, 0);
 }
 
@@ -95,6 +91,7 @@ drawArrowhead(cairo_t *cr, struct vec2d* o, float angle){
     cairo_translate(cr, o -> x, o -> y);
     cairo_rotate(cr, angle);
 
+    // TODO: Change as primitive members because it changes every line
     struct symbol *s;
     GET_FLOAT_SYM(s, "arrowht");
     float ht = -s -> val.d;
@@ -152,9 +149,7 @@ drawLine(cairo_t *cr, struct primitive *p){
         cairo_line_to(cr, l -> x, l -> y);
     }
 
-    struct symbol *s;
-    GET_FLOAT_SYM(s, "ps");
-    cairo_set_line_width(cr, (s -> val.d) / DPI / 20.0);
+    cairo_set_line_width(cr, 1.0 / DPI);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -185,9 +180,7 @@ drawSpline(cairo_t *cr, struct primitive *p){
     }
 
     cairo_line_to(cr, l -> x, l -> y);
-    struct symbol *s;
-    GET_FLOAT_SYM(s, "ps");
-    cairo_set_line_width(cr, (s -> val.d) / DPI / 20.0);
+    cairo_set_line_width(cr, 1.0 / DPI);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -230,9 +223,7 @@ drawArc(cairo_t *cr, struct primitive *p){
                 rad, theta0, theta1);
     }
 
-    struct symbol *s;
-    GET_FLOAT_SYM(s, "ps");
-    cairo_set_line_width(cr, (s -> val.d) / DPI / 20.0);
+    cairo_set_line_width(cr, 1.0 / DPI);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -265,7 +256,7 @@ renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
             drawSpline(cr, p); break;
     }
     drawTextList(cr, p -> txt);
-};
+}
 
 static void
 renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
@@ -281,8 +272,8 @@ renderPresentation(){
 
     snprintf(ffmpeg_cmd, 256,
             "ffmpeg -r %d -f rawvideo -pix_fmt bgra "
-            "-s %dx%d -i - -threads 0 -preset fast "
-            "-y -pix_fmt yuv420p -crf 21 %s "
+            "-s %dx%d -i - -threads 0 -preset ultrafast "
+            "-y -pix_fmt yuv420p -crf 23 %s "
             "-hide_banner -loglevel error " ,
             FRAMERATE, WIDTH, HEIGHT, OUTNAME);
 
@@ -297,14 +288,24 @@ renderPresentation(){
     cairo_t *cr = cairo_create(surface);
     uint8_t *buf = cairo_image_surface_get_data(surface);
 
+    size_t buffSize = cairo_image_surface_get_stride(surface) *
+        cairo_image_surface_get_height(surface);
+    uint8_t *tempBuf = malloc(buffSize);
+
     cairo_translate(cr, WIDTH / 2, HEIGHT / 2);
     cairo_scale(cr, DPI, -DPI);
 
     for (struct scene *s = g_presentation -> scenes; s; s = s -> next) {
+        cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+        cairo_paint(cr);
         for (struct keyframe *k = s -> keyframes; k; k = k -> next) {
+            cairo_surface_flush(surface);
+            memcpy(tempBuf, buf, buffSize);
             for (int i = 0; i < k -> duration * FRAMERATE; i++) {
-                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-                cairo_paint(cr);
+                if (k -> events) {
+                    memcpy(buf, tempBuf, buffSize);
+                    cairo_surface_mark_dirty(surface);
+                }
                 for (struct event *e = k -> events; e; e = e -> next) {
                     renderEvent(surface, cr, e);
                 }

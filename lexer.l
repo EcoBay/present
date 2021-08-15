@@ -20,6 +20,8 @@
 "spline"    { return SPLINE; }
 "move"      { return MOVE; }
 
+"for"       { return FOR; }
+
 "up"        { return UP; }
 "down"      { return DOWN; }
 "left"      { return LEFT; }
@@ -83,6 +85,24 @@
 "rand"      { return RAND; }
 "abs"       { return ABS; }
 "rgba"      { return RGBA; }
+
+"keyframe"  { return KEYFRAME; }
+"scene"     { return SCENE; }
+
+"linear"    { return LINEAR; }
+"sine"      { return SINE; }
+"quadratic" { return QUADRATIC; }
+"cubic"     { return CUBIC; }
+
+"in"        { return IN; }
+"out"       { return OUT; }
+
+"s"         |
+"second"s?  { return SECONDS; }
+"ms"            |
+"milliseconds"  { return MILLISECONDS; }
+"m"         |
+"minute"s?  { return MINUTES; }
 
 "\\#".*
 [ \t]
