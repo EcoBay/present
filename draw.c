@@ -11,7 +11,7 @@
 #define SET_LINE_STYLE(CR, P) if (P -> flags & 4) { \
         dashed(CR, P -> spacing);                   \
     } else if (P -> flags & 8) {                    \
-        dotted(CR, P -> spacing);                   \
+        dotted(CR, P -> spacing, P -> ps);          \
     } else {                                        \
         cairo_set_dash(CR, NULL, 0, 0);             \
     }
@@ -23,7 +23,7 @@
     }                                                           \
     if (!(P -> flags & 16)) {                                   \
         cairo_set_source_rgb(CR,0, 0, 0);                       \
-        cairo_set_line_width(CR, 1.0 / DPI);                    \
+        cairo_set_line_width(CR, P -> ps / 20.0 / DPI);         \
         SET_LINE_STYLE(CR, P);                                  \
         cairo_stroke(CR);                                       \
     }
@@ -35,8 +35,8 @@ const static int FRAMERATE = 24;
 const char *OUTNAME = "test.mp4";
 
 static void
-dotted(cairo_t *cr, float spacing) {
-    double pat[] = {1.0 / DPI, spacing};
+dotted(cairo_t *cr, float spacing, float ps) {
+    double pat[] = {ps / 20.0 / DPI, spacing};
     cairo_set_dash(cr, pat, 2, 0);
 }
 
@@ -84,27 +84,29 @@ drawCircle(cairo_t *cr, struct primitive *p){
 }
 
 static void
-drawArrowhead(cairo_t *cr, struct vec2d* o, float angle){
+drawArrowhead(cairo_t *cr, struct vec2d* o, float angle, float arrowht, float arrowwid, float ps){
     cairo_matrix_t save_matrix;
     cairo_get_matrix(cr, &save_matrix);
 
     cairo_translate(cr, o -> x, o -> y);
     cairo_rotate(cr, angle);
 
-    // TODO: Change as primitive members because it changes every line
-    struct symbol *s;
-    GET_FLOAT_SYM(s, "arrowht");
-    float ht = -s -> val.d;
-    GET_FLOAT_SYM(s, "arrowwid");
-    float wid = s -> val.d / 2.0;
+    float ht = -arrowht;
+    float wid = arrowwid / 2.0;
 
     cairo_new_path(cr);
     cairo_move_to(cr, ht, -wid);
     cairo_line_to(cr, 0, 0);
     cairo_line_to(cr, ht,  wid);
-    cairo_close_path(cr);
 
-    cairo_fill(cr);
+    if (ps == 0.0f) {
+        cairo_close_path(cr);
+        cairo_fill(cr);
+    } else {
+        cairo_set_line_width(cr, ps / 20.0 / DPI);
+        cairo_set_dash(cr, NULL, 0, 0);
+        cairo_stroke(cr);
+    }
 
     cairo_set_matrix(cr, &save_matrix);
 }
@@ -126,8 +128,9 @@ drawLineArrowhead(cairo_t *cr, struct primitive *p){
     struct vec2d l1 = { p -> segments -> x, p -> segments -> y };
 
     if ( p -> arrowStyle & 2 ) {
+        float ps = (p -> arrowhead & 2) ? 0.0f : p -> ps;
         float angle = getRotation(l0.x - l1.x, l0.y - l1.y);
-        drawArrowhead(cr, &l0, angle);
+        drawArrowhead(cr, &l0, angle, p -> arrowht, p -> arrowwid, ps);
     }
 
     if ( p -> arrowStyle & 1 ) {
@@ -135,8 +138,9 @@ drawLineArrowhead(cairo_t *cr, struct primitive *p){
             l0 = l1;
             l1 = (struct vec2d) { l -> x, l -> y };
         }
+        float ps = (p -> arrowhead & 1) ? 0.0f : p -> ps;
         float angle = getRotation(l1.x - l0.x, l1.y - l0.y);
-        drawArrowhead(cr, &l1, angle);
+        drawArrowhead(cr, &l1, angle, p -> arrowht, p -> arrowwid, ps);
     }
 }
 
@@ -149,7 +153,7 @@ drawLine(cairo_t *cr, struct primitive *p){
         cairo_line_to(cr, l -> x, l -> y);
     }
 
-    cairo_set_line_width(cr, 1.0 / DPI);
+    cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -180,7 +184,7 @@ drawSpline(cairo_t *cr, struct primitive *p){
     }
 
     cairo_line_to(cr, l -> x, l -> y);
-    cairo_set_line_width(cr, 1.0 / DPI);
+    cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
@@ -223,15 +227,17 @@ drawArc(cairo_t *cr, struct primitive *p){
                 rad, theta0, theta1);
     }
 
-    cairo_set_line_width(cr, 1.0 / DPI);
+    cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
     SET_LINE_STYLE(cr, p);
     cairo_stroke(cr);
 
-    if ( p -> arrowStyle & 1 ) {
-        drawArrowhead(cr, &p -> start, theta0 - M_PI / 2.0 * cw);
-    }
     if ( p -> arrowStyle & 2 ) {
-        drawArrowhead(cr, &p -> end, theta1 + M_PI / 2.0 * cw);
+        float ps = (p -> arrowhead & 2) ? 0.0f : p -> ps;
+        drawArrowhead(cr, &p -> start, theta0 - M_PI / 2.0 * cw, p -> arrowht, p -> arrowwid, ps);
+    }
+    if ( p -> arrowStyle & 1 ) {
+        float ps = (p -> arrowhead & 1) ? 0.0f : p -> ps;
+        drawArrowhead(cr, &p -> end, theta1 + M_PI / 2.0 * cw, p -> arrowht, p -> arrowwid, ps);
     }
 }
 

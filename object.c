@@ -109,6 +109,16 @@ newPrimitive(enum primitiveType t){
     p -> fill = NULL;
     p -> txt = NULL;
 
+    struct symbol *s;
+    GET_FLOAT_SYM(s, "ps");
+    p -> ps = s -> val.d;
+    GET_FLOAT_SYM(s, "arrowht");
+    p -> arrowht = s -> val.d;
+    GET_FLOAT_SYM(s, "arrowwid");
+    p -> arrowwid = s -> val.d;
+    GET_FLOAT_SYM(s, "arrowhead");
+    p -> arrowhead = (uint8_t) s -> val.d;
+
     return p;
 }
 

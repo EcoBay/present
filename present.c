@@ -29,7 +29,7 @@ const struct {
     {"arrowwid", 0.05},
     {"arrowht", 0.1},
     {"dashwid", 0.1},
-    {"arrowhead", 2.0},
+    {"arrowhead", 3.0},
     {"maxpswid", 24},
     {"maxpsht", 8.5},
     {"scale", 1},

@@ -84,6 +84,12 @@ struct primitive {
      */
     struct color *fill;
     struct textList *txt;
+
+    /* draw states */
+    float ps;
+    float arrowht;
+    float arrowwid;
+    uint8_t arrowhead;
 };
 
 union eventState {
