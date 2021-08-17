@@ -1,5 +1,7 @@
 IDIR=include
 ODIR=obj
+SDIR=src
+BDIR=bin
 
 MYLFLAGS=`pkg-config --libs librsvg-2.0 cairo`
 MYCFLAGS=`pkg-config --cflags librsvg-2.0 cairo` -I$(IDIR)
@@ -12,16 +14,17 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 all: parser lexer present
 
-parser: parser.y
-	bison $(BISONFLAGS) -d -opresent.tab.c parser.y
+parser: $(SDIR)/parser.y
+	bison $(BISONFLAGS) -d --output=$(SDIR)/present.tab.c $(SDIR)/parser.y
 
-lexer: lexer.l present.tab.c present.tab.h
-	flex $(FLEXFlAGS) -opresent.lex.c lexer.l 
+lexer: $(SDIR)/lexer.l $(SDIR)/present.tab.c $(SDIR)/present.tab.h
+	flex $(FLEXFlAGS) --outfile=$(SDIR)/present.lex.c $(SDIR)/lexer.l 
 
-$(OBJ): $(ODIR)/%.o: %.c $(DEPS)
+$(OBJ): $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) ${MYCFLAGS}
 
 present: $(OBJ)
-	$(CC) $^ $(CFLAGS) ${MYCFLAGS} ${MYLFLAGS} $(LIBS) -o $@ 
+	$(CC) $^ $(CFLAGS) ${MYCFLAGS} ${MYLFLAGS} $(LIBS) -o $(BDIR)/$@ 
+
 clean:
-	rm -f present present.lex.c present.tab* $(ODIR)/*.o *.mp4
+	rm -f $(BDIR)/present $(SDIR)/present.lex.c $(SDIR)/present.tab* $(ODIR)/*.o *.mp4
