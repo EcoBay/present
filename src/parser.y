@@ -1,34 +1,13 @@
 %{
-#include "tex.h"
-#include "object.h"
+#include "ast.h"
 #include "present.h"
 #include "symtable.h"
-#include <stddef.h>
-#include <errno.h>
-#include <stdint.h>
 #include <math.h>
-
-#define TEXTLIST(Y, S, P, L) struct symbol *s;              \
-    GET_FLOAT_SYM(s, "ps");                                 \
-    char *id = createTex(S, s -> val.d);                    \
-    if (tex2SVG(id)) {                                      \
-        yyerror("Error: Cannot create text \"%s\"\n", S);   \
-        abort();                                            \
-    }                                                       \
-    RsvgHandle *h = getSVGHandler(id);;                     \
-    Y = addTextList(h, P, L);                               \
-    free(S);                                                \
-    free(id)                                                
-
-#define FLOAT_TO_CHAR(Y, X) if (X < 0.0 || X > 1.0) {       \
-        yyerror("Error: invalid rgba value of %.2f\n", X);  \
-        abort();                                            \
-    }                                                       \
-    Y = X * 255
 %}
 
 
 %union {
+    struct ast *a;
     char *s;
     struct primitive *p;
     int i;
@@ -72,10 +51,9 @@
 
 %token EOL
 
-%type <p> primitive
+%type <a> program statement keyframe_stmt direction_stmt
+%type <a> primitive duration expr color
 %type <i> positioning easing
-%type <d> expr duration
-%type <c> color
 
 %left TEXT
 %left LJUST RJUST ABOVE BELOW
@@ -95,25 +73,21 @@
 %right '^'
 
 %%
-program: statement
-       | program EOL statement
-       | program ';' statement
+root: program   { eval($1); }
+
+program: statement              { $$ = astStmt($1, NULL); }
+       | program EOL statement  { $$ = astStmt($1, $3); }
+       | program ';' statement  { $$ = astStmt($1, $3); }
 ;
 
-statement: %empty
-         | primitive        
-            {
-                preparePrimitive($1);
-                newDrawEvent($1);
-            }
-         | direction_stmt
-         | keyframe_stmt
+statement: %empty               { $$ = NULL; }
+         | primitive            { $$ = astDraw($1); }
+         | direction_stmt       { $$ = $1; }
+         | keyframe_stmt        { $$ = $1; }
 ;
 
-keyframe_stmt: easing KEYFRAME
-                { newKeyframe(1.0, $1); }
-             | easing KEYFRAME FOR duration
-                { newKeyframe($4, $1); }
+keyframe_stmt: easing KEYFRAME              { $$ = astKF(NULL, $1); }
+             | easing KEYFRAME FOR duration { $$ = astKF($4, $1); }
 ;
 
 easing: %empty          { $$ = EASE_LINEAR; }
@@ -131,438 +105,98 @@ easing: %empty          { $$ = EASE_LINEAR; }
 
 duration: expr              { $$ = $1; }
         | expr SECONDS      { $$ = $1; }
-        | expr MILLISECONDS { $$ = $1 / 1000.0; }
-        | expr MINUTES      { $$ = $1 * 60.0; }
+        | expr MILLISECONDS { $$ = astOp('/', $1, astNum(1000.0)); }
+        | expr MINUTES      { $$ = astOp('*', $1, astNum(60.0)); }
 ;
 
-direction_stmt: UP      { setDirection(0); }
-              | RIGHT   { setDirection(1); }
-              | DOWN    { setDirection(2); }
-              | LEFT    { setDirection(3); }
+direction_stmt: UP      { $$ = astDir(0); }
+              | RIGHT   { $$ = astDir(1); }
+              | DOWN    { $$ = astDir(2); }
+              | LEFT    { $$ = astDir(3); }
 ;
 
-primitive: BOX          
-            {
-                $$ = newPrimitive(PRIM_BOX);
-
-                struct symbol *s;
-                GET_FLOAT_SYM(s, "boxht");
-                $$ -> ht = s -> val.d;
-                GET_FLOAT_SYM(s, "boxwid");
-                $$ -> wid = s -> val.d;
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
-            }
-         | CIRCLE       
-            {
-                $$ = newPrimitive(PRIM_CIRCLE);
-
-                struct symbol *s;
-                GET_FLOAT_SYM(s, "circlerad");
-                $$ -> expr = s -> val.d;
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
-            }
+primitive: BOX
+            { $$ = astPrim(PRIM_BOX); }
+         | CIRCLE
+            { $$ = astPrim(PRIM_CIRCLE); }
          | ELLIPSE      
-            {
-                $$ = newPrimitive(PRIM_ELLIPSE);
-
-                struct symbol *s;
-                GET_FLOAT_SYM(s, "ellipseht");
-                $$ -> ht = s -> val.d;
-                GET_FLOAT_SYM(s, "ellipsewid");
-                $$ -> wid = s -> val.d;
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
-            }
+            { $$ = astPrim(PRIM_ELLIPSE); }
          | ARC          
-            {
-                $$ = newPrimitive(PRIM_ARC);
-
-                struct symbol *s;
-                GET_FLOAT_SYM(s, "arcrad");
-                $$ -> expr = s -> val.d;
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
-            }
+            { $$ = astPrim(PRIM_ARC); }
          | LINE         
-            {
-                $$ = newPrimitive(PRIM_LINE);
-
-                struct symbol *s;
-                switch ($$ -> direction = getDirection()) {
-                    case 0:
-                    case 2:
-                        GET_FLOAT_SYM(s, "lineht");
-                    case 1:
-                    case 3:
-                        GET_FLOAT_SYM(s, "linewid");
-                }
-
-                $$ -> expr = s -> val.d;
-                getCursor(&$$ -> start);
-            }
+            { $$ = astPrim(PRIM_LINE); }
          | ARROW        
-            {
-                $$ = newPrimitive(PRIM_ARROW);
-                $$ -> arrowStyle = 1;
-
-                struct symbol *s;
-                switch ($$ -> direction = getDirection()) {
-                    case 0:
-                    case 2:
-                        GET_FLOAT_SYM(s, "lineht");
-                    case 1:
-                    case 3:
-                        GET_FLOAT_SYM(s, "linewid");
-                }
-
-                $$ -> expr = s -> val.d;
-                getCursor(&$$ -> start);
-            }
+            { $$ = astPrim(PRIM_ARROW); }
          | SPLINE       
-            {
-                $$ = newPrimitive(PRIM_SPLINE);
-
-                struct symbol *s;
-                switch ($$ -> direction = getDirection()) {
-                    case 0:
-                    case 2:
-                        GET_FLOAT_SYM(s, "lineht");
-                    case 1:
-                    case 3:
-                        GET_FLOAT_SYM(s, "linewid");
-                }
-
-                $$ -> expr = s -> val.d;
-                getCursor(&$$ -> start);
-            }
+            { $$ = astPrim(PRIM_SPLINE); }
          | MOVE         
+            { $$ = astPrim(PRIM_MOVE); }
+         | TEXT positioning
             {
-                $$ = newPrimitive(PRIM_MOVE);
-
-                struct symbol *s;
-                switch ($$ -> direction = getDirection()) {
-                    case 0:
-                    case 2:
-                        GET_FLOAT_SYM(s, "moveht");
-                    case 1:
-                    case 3:
-                        GET_FLOAT_SYM(s, "movewid");
-                }
-
-                $$ -> expr = s -> val.d;
-                getCursor(&$$ -> start);
+                struct ast *t = astPrim(PRIM_TEXT_LIST);
+                $$ = astAttr(t, ATTR_TXT, astTL(NULL, astText($1), $2));
             }
-        | TEXT positioning
+         | primitive UP
+            { $$ = astAttr($1, ATTR_UP, NULL); }
+         | primitive UP expr
+            { $$ = astAttr($1, ATTR_UP, $3); }
+         | primitive RIGHT
+            { $$ = astAttr($1, ATTR_RIGHT, NULL); }
+         | primitive RIGHT expr
+            { $$ = astAttr($1, ATTR_RIGHT, $3); }
+         | primitive DOWN
+            { $$ = astAttr($1, ATTR_DOWN, NULL); }
+         | primitive DOWN expr
+            { $$ = astAttr($1, ATTR_DOWN, $3); }
+         | primitive LEFT
+            { $$ = astAttr($1, ATTR_LEFT, NULL); }
+         | primitive LEFT expr
+            { $$ = astAttr($1, ATTR_LEFT, $3); }
+         | primitive BY expr ',' expr
+            { $$ = astAttr($1, ATTR_BY, astOp(0, $3, $5)); }
+         | primitive THEN
+            { $$ = astAttr($1, ATTR_THEN, NULL); }
+         | primitive LARROW
+            { $$ = astAttr($1, ATTR_LARROW, NULL); }
+         | primitive RARROW
+            { $$ = astAttr($1, ATTR_RARROW, NULL); }
+         | primitive LRARROW
+            { $$ = astAttr($1, ATTR_LRARROW, NULL); }
+         | primitive CW
+            { $$ = astAttr($1, ATTR_CW, NULL); }
+         | primitive DASHED
+            { $$ = astAttr($1, ATTR_DASHED, NULL); }
+         | primitive DASHED expr
+            { $$ = astAttr($1, ATTR_DASHED, $3); }
+         | primitive DOTTED
+            { $$ = astAttr($1, ATTR_DOTTED, NULL); }
+         | primitive DOTTED expr
+            { $$ = astAttr($1, ATTR_DOTTED, $3); }
+         | primitive SOLID
+            { $$ = astAttr($1, ATTR_SOLID, NULL); }
+         | primitive INVIS
+            { $$ = astAttr($1, ATTR_INVIS, NULL); }
+         | primitive FILL
             {
-                $$ = newPrimitive(PRIM_TEXT_LIST);
-                TEXTLIST($$ -> txt, $1, $2, NULL);
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
+                struct ast* c = astRGBA(
+                    astNum(0), astNum(0), astNum(0),
+                    astOp('*', astRef("fillval"), astNum(255)));
+                $$ = astAttr($1, ATTR_FILL, c);
             }
-        | primitive UP
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-
-                    struct symbol *s;
-                    if ($$ -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "moveht");
-                    } else {
-                        GET_FLOAT_SYM(s, "lineht");
-                    }
-                    l -> y += s -> val.d;
-
-                    $$ -> flags |= 1;
-                    setDirection(0);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 0;
-                }
-            }
-        | primitive UP expr
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-                    l -> y += $3;
-
-                    $$ -> flags |= 1;
-                    setDirection(0);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 0;
-                }
-            }
-        | primitive RIGHT
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-
-                    struct symbol *s;
-                    if ($$ -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "movewid");
-                    } else {
-                        GET_FLOAT_SYM(s, "linewid");
-                    }
-                    l -> x += s -> val.d;
-
-                    $$ -> flags |= 1;
-                    setDirection(1);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 1;
-                }
-            }
-        | primitive RIGHT expr
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-                    l -> x += $3;
-
-                    $$ -> flags |= 1;
-                    setDirection(1);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 1;
-                }
-            }
-        | primitive DOWN
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-
-                    struct symbol *s;
-                    if ($$ -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "moveht");
-                    } else {
-                        GET_FLOAT_SYM(s, "lineht");
-                    }
-                    l -> y -= s -> val.d;
-
-                    $$ -> flags |= 1;
-                    setDirection(2);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 2;
-                }
-            }
-        | primitive DOWN expr
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-                    l -> y -= $3;
-
-                    $$ -> flags |= 1;
-                    setDirection(2);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 2;
-                }
-            }
-        | primitive LEFT
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-
-                    struct symbol *s;
-                    if ($$ -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "movewid");
-                    } else {
-                        GET_FLOAT_SYM(s, "linewid");
-                    }
-                    l -> x -= s -> val.d;
-
-                    $$ -> flags |= 1;
-                    setDirection(3);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 3;
-                }
-            }
-        | primitive LEFT expr
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-                    l -> x -= $3;
-
-                    $$ -> flags |= 1;
-                    setDirection(3);
-                } else if ($$ -> t == 3) {
-                    $$ -> direction = 3;
-                }
-            }
-        | primitive BY expr ',' expr
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    l = getLastSegment($$);
-                    l -> x += $3;
-                    l -> y += $5;
-
-                    $$ -> flags |= 1;
-                }
-            }
-        | primitive THEN
-            {
-                $$ = $1;
-                if ($$ -> t > 3 && $$ -> t < 8) {
-                    struct location *l;
-                    if (! $$ -> segments) {
-                        l = getLastSegment($$);
-                        float e = $$ -> expr;
-
-                        switch ($$ -> direction) {
-                            case 0: l -> y += e; break;
-                            case 1: l -> x += e; break;
-                            case 2: l -> y -= e; break;
-                            case 3: l -> x -= e; break;
-                        }
-                    } else {
-                        l = getLastSegment($$);
-                        l -> next = malloc(sizeof(struct location));
-                        l -> next -> next = NULL;
-                        l -> next -> x = l -> x;
-                        l -> next -> y = l -> y;
-                        $$ -> flags &= ~1;
-                    }
-                }
-            }
-        | primitive LARROW
-            {
-                $$ = $1;
-                $$ -> arrowStyle &= ~3;
-                $$ -> arrowStyle |=  2;
-            }
-        | primitive RARROW
-            {
-                $$ = $1;
-                $$ -> arrowStyle &= ~3;
-                $$ -> arrowStyle |=  1;
-            }
-        | primitive LRARROW
-            {
-                $$ = $1;
-                $$ -> arrowStyle &= ~3;
-                $$ -> arrowStyle |=  3;
-            }
-        | primitive CW
-            {
-                $$ = $1;
-                $$ -> flags |= 2;
-            }
-        | primitive DASHED
-            {
-                $$ = $1;
-                $$ -> spacing = 0.05;
-
-                $$ -> flags &= ~12;
-                $$ -> flags |= 4;
-            }
-        | primitive DASHED expr
-            {
-                $$ = $1;
-                $$ -> spacing = $3;
-
-                $$ -> flags &= ~12;
-                $$ -> flags |= 4;
-            }
-        | primitive DOTTED
-            {
-                $$ = $1;
-                $$ -> spacing = 0.05;
-
-                $$ -> flags &= ~12;
-                $$ -> flags |= 8;
-            }
-        | primitive DOTTED expr
-            {
-                $$ = $1;
-                $$ -> spacing = $3;
-
-                $$ -> flags &= ~12;
-                $$ -> flags |= 8;
-            }
-        | primitive SOLID
-            {
-                $$ = $1;
-                $$ -> flags &= ~16;
-            }
-        | primitive INVIS
-            {
-                $$ = $1;
-                $$ -> flags |= 16;
-            }
-        | primitive FILL
-            {
-                $$ = $1;
-                $$ -> flags |= 32;
-
-                $$ -> fill = malloc(sizeof(struct color));
-                $$ -> fill -> r = 0;
-                $$ -> fill -> g = 0;
-                $$ -> fill -> b = 0;
-
-                struct symbol *s;
-                GET_FLOAT_SYM(s, "fillval");
-                $$ -> fill -> a = s -> val.d * 255;
-            }
-        | primitive FILL color
-            {
-                $$ = $1;
-                $$ -> flags |= 32;
-                $$ -> fill = $3;
-            }
+         | primitive FILL color
+            { $$ = astAttr($1, ATTR_FILL, $3); }
          | primitive TEXT positioning
-            {
-                $$ = $1;
-                TEXTLIST($$ -> txt, $2, $3, $$ -> txt);
-
-                $$ -> direction = getDirection();
-                getCursor(&$$ -> start);
-            }
+            { $$ = astAttr($1, ATTR_TXT, astTL(NULL, astText($2), $3)); }
          | primitive HT expr
-            {
-                $$ = $1;
-                $$ -> ht = $3;
-            }
+            { $$ = astAttr($1, ATTR_HT, $3); }
          | primitive WID expr
-            {
-                $$ = $1;
-                $$ -> wid = $3;
-            }
+            { $$ = astAttr($1, ATTR_WID, $3); }
          | primitive RAD expr
-            {
-                $$ = $1;
-                $$ -> rad = $3;
-                $$ -> flags |= 64;
-            }
+            { $$ = astAttr($1, ATTR_RAD, $3); }
          | primitive DIAM expr
-            {
-                $$ = $1;
-                $$ -> rad = $3 / 2.0;
-                $$ -> flags |= 64;
-            }
-         | primitive expr               %prec HT
-            {
-                $$ = $1;
-                $$ -> expr = $2;
-            }
+            { $$ = astAttr($1, ATTR_DIAM, $3); }
+         | primitive expr                   %prec HT
+            { $$ = astAttr($1, ATTR_EXPR, $2); }
 ;
 
 positioning: %empty
@@ -596,117 +230,51 @@ positioning: %empty
 ;
 
 expr: NUMBER
+        { $$ = astNum($1); }
     | expr '+' expr
-        { $$ = $1 + $3; }
+        { $$ = astOp('+', $1, $3); }
     | expr '-' expr
-        { $$ = $1 - $3; }
+        { $$ = astOp('-', $1, $3); }
     | expr '*' expr
-        { $$ = $1 * $3; }
+        { $$ = astOp('*', $1, $3); }
     | expr '/' expr
-        { 
-            if ($3 == 0.0) {
-                yyerror("Error: division by zero\n");
-                abort();
-            }
-            $$ = $1 / $3;
-        }
+        { $$ = astOp('/', $1, $3); }
     | expr '%' expr
-        {
-            if ($3 == 0.0) {
-                yyerror("Error: modulos by zero\n");
-                abort();
-            }
-            $$ = fmodf($1, $3);
-        }
+        { $$ = astOp('%', $1, $3); }
     | expr '^' expr
-        {
-            errno = 0;
-            $$ = pow($1, $3);
-            if (errno == EDOM) {
-                yyerror("Error: arguments to '^' is out of domain\n");
-                abort();
-            }
-        }
-    | '-' expr                          %prec '!'
-        { $$ = -$2; }
+        { $$ = astOp('^', $1, $3); }
+    | '-' expr                              %prec '!'
+        { $$ = astOp(AST_UNM, $2, NULL); }
     | '(' expr ')'
         { $$ = $2; }
     | SIN '(' expr ')'
-        {
-            errno = 0;
-            $$ = sin($3);
-            if (errno == ERANGE) {
-                yyerror("Error: sin result out of range\n");
-                abort();
-            }
-        }
+        { $$ = astOp(AST_SIN, $3, NULL); }
     | COS '(' expr ')'
-        {
-            errno = 0;
-            $$ = cos($3);
-            if (errno == ERANGE) {
-                yyerror("Error: cos result out of range\n");
-                abort();
-            }
-        }
+        { $$ = astOp(AST_COS, $3, NULL); }
     | ATAN2 '(' expr ',' expr ')'
-        {
-            errno = 0;
-            $$ = atan2($3, $5);
-            if (errno == EDOM) {
-                yyerror("Error: atan2 argument out of domain\n");
-                abort();
-            }
-            if (errno == ERANGE) {
-                yyerror("Error: atan2 result out of range");
-                abort();
-            }
-        }
+        { $$ = astOp(AST_ATAN2, $3, $5); }
     | LOG '(' expr ')'
-        {
-            errno = 0;
-            $$ = log($3);
-            if (errno == ERANGE) {
-                yyerror("Error: log result out of range\n");
-                abort();
-            }
-        }
+        { $$ = astOp(AST_LOG, $3, NULL); }
     | EXP '(' expr ')'
-        {
-            errno = 0;
-            $$ = pow(10.0, $3);
-            if (errno == ERANGE) {
-                yyerror("Error: exp result out of range\n");
-                abort();
-            }
-        }
+        { $$ = astOp(AST_EXP, $3, NULL); }
     | SQRT '(' expr ')'
-        {
-            errno = 0;
-            $$ = sqrt($3);
-            if (errno == EDOM) {
-                yyerror("Error: sqrt result out of range\n");
-                abort();
-            }
-        }
+        { $$ = astOp(AST_SQRT, $3, NULL); }
     | MAX '(' expr ',' expr ')'
-        { $$ = $3 > $5 ? $3 : $5; }
+        { $$ = astOp(AST_MAX, $3, $5); }
     | MIN '(' expr ',' expr ')'
-        { $$ = $3 < $5 ? $3 : $5; }
+        { $$ = astOp(AST_MIN, $3, $5); }
     | INT '(' expr ')'
-        { $$ = $3 < 0 ? -floor(-$3) : floor($3); }
+        { $$ = astOp(AST_INT, $3, NULL); }
     | RAND '(' ')'
-        { $$ = (float) rand() / (float) RAND_MAX; }
+        { $$ = astOp(AST_RAND, NULL, NULL); }
     | ABS '(' expr ')'
-        { $$ = fabsf($3); }
+        { $$ = astOp(AST_ABS , $3, NULL); }
     | '!' expr
-        { $$ = ($2 == 0.0); }
+        { $$ = astOp('!', $2, NULL); }
 ;
 
 color: HEXCOLOR
         {
-            $$ = malloc(sizeof(struct color));
-
             char c[9];
             strncpy(c, $1, 9);
 
@@ -719,21 +287,27 @@ color: HEXCOLOR
                 len *= 2;
             }
             free($1);
-            if (len < 8) {
-                c[6] = 'F';
-                c[7] = 'F';
-            }
+
 
             uint32_t i = strtoul(c, NULL, 16);
-            *(uint32_t*) $$ = i;
+            struct ast *a;
+            if (len < 8) {
+                a = astOp('*', astRef("fillval"), astNum(255));
+            } else {
+                a = astNum((uint8_t) i);
+            }
+            struct ast *b = astNum((uint8_t) (i >> 8));
+            struct ast *g = astNum((uint8_t) (i >> 16));
+            struct ast *r = astNum((uint8_t) (i >> 24));
+            $$ = astRGBA(r, g, b, a);
         }
      | RGBA '(' expr ',' expr ',' expr ',' expr ')'
         {
-            $$ = malloc(sizeof(struct color));
-            FLOAT_TO_CHAR($$ -> r, $3);
-            FLOAT_TO_CHAR($$ -> g, $5);
-            FLOAT_TO_CHAR($$ -> b, $7);
-            FLOAT_TO_CHAR($$ -> a, $9);
+            struct ast *r = astOp('*', $3, astNum(255));
+            struct ast *g = astOp('*', $5, astNum(255));
+            struct ast *b = astOp('*', $7, astNum(255));
+            struct ast *a = astOp('*', $9, astNum(255));
+            $$ = astRGBA(r, g, b, a);
         }
 ;
 %%
