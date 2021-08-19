@@ -25,12 +25,20 @@
         abort();                                            \
     }                                                       \
     Y = X * 255
+
+struct vec2d* initVec2d(float x, float y) {
+    struct vec2d *a = malloc(sizeof(struct vec2d));
+    a -> x = x;
+    a -> y = y;
+    return a;
+}
 %}
 
 
 %union {
     char *s;
     struct primitive *p;
+    struct vec2d *v;
     int i;
     float d;
     struct color *c;
@@ -45,9 +53,15 @@
 /* directions */
 %token UP DOWN LEFT RIGHT
 
+/* corners */
+%token TOP BOT START END
+%token DOT_N DOT_E DOT_W DOT_S DOT_C
+%token DOT_NE DOT_NW DOT_SE DOT_SW DOT_START DOT_END
+
 /* attributes */
 %token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
 %token DASHED CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
+u
 
 /* text positioning */
 %token CENTER LJUST RJUST ABOVE BELOW
@@ -69,13 +83,14 @@
 /* time units */
 %token SECONDS MILLISECONDS MINUTES
 
-
 %token EOL
 
 %type <p> primitive
-%type <i> positioning easing
+%type <i> positioning easing corner
+%type <i> optional_corner
 %type <d> expr duration
 %type <c> color
+%type <v> position
 
 %left TEXT
 %left LJUST RJUST ABOVE BELOW
@@ -418,6 +433,24 @@ primitive: BOX
                     $$ -> flags |= 1;
                 }
             }
+        | primitive FROM position
+            {
+                $$ = $1;
+                $$ -> start.x = $3 -> x;
+                $$ -> start.y = $3 -> y;
+            }
+        | primitive TO position
+            {
+                $$ = $1;
+                if ($$ -> t > 2 && $$ -> t < 8) {
+                    struct location *l;
+                    l = getLastSegment($$);
+                    l -> x = $3 -> x;
+                    l -> y = $3 -> y;
+
+                    $$ -> flags |= 1;
+                }
+            }
         | primitive THEN
             {
                 $$ = $1;
@@ -442,6 +475,54 @@ primitive: BOX
                         $$ -> flags &= ~1;
                     }
                 }
+            }
+        | primitive CHOP
+            {
+                $$ = $1;
+                if ($$ -> t > 3 && $$ -> t < 8) {
+                    struct symbol *s;
+                    GET_FLOAT_SYM(s, "circlerad");
+
+                    if ($$ -> flags & 128) {
+                        $$ -> chop2 = s -> val.d;
+                    } else {
+                        $$ -> chop1 = $$ -> chop2 = s -> val.d;
+                        $$ -> flags |= 128;
+                    }
+                }
+            }
+        | primitive CHOP expr
+            {
+                $$ = $1;
+                if ($$ -> t > 3 && $$ -> t < 8) {
+                    if ($$ -> flags & 128) {
+                        $$ -> chop2 = $3;
+                    } else {
+                        $$ -> chop1 = $$ -> chop2 = $3;
+                        $$ -> flags |= 128;
+                    }
+                }
+            }
+        | primitive WITH optional_corner
+            {
+                $$ = $1;
+                $$ -> with = $3;
+            }
+        | primitive WITH corner
+            {
+                $$ = $1;
+                $$ -> with = $3;
+            }
+        | primitive AT position
+            {
+                $$ = $1;
+
+                if (!$$ -> at) {
+                    $$ -> at = malloc(sizeof(struct vec2d));
+                }
+
+                $$ -> at -> x = $3 -> x;
+                $$ -> at -> y = $3 -> y;
             }
         | primitive LARROW
             {
@@ -735,5 +816,46 @@ color: HEXCOLOR
             FLOAT_TO_CHAR($$ -> b, $7);
             FLOAT_TO_CHAR($$ -> a, $9);
         }
+;
+
+position: expr ',' expr
+            { $$ = initVec2d($1, $3); }
+        | '(' position ')'
+            { $$ = $2; }
+;
+
+optional_corner: DOT_N      { $$ = 1; }
+               | DOT_E      { $$ = 4; }
+               | DOT_W      { $$ = 8; }
+               | DOT_S      { $$ = 2; }
+               | DOT_C      { $$ = 0; }
+               | DOT_NE     { $$ = 5; }
+               | DOT_NW     { $$ = 9; }
+               | DOT_SE     { $$ = 6; }
+               | DOT_SW     { $$ = 10; }
+               | DOT_START  { $$ = 12; }
+               | DOT_END    { $$ = 3; }
+;
+
+corner: TOP             { $$ = 1; }
+      | BOT             { $$ = 2; }
+      | LEFT            { $$ = 8; }
+      | RIGHT           { $$ = 4; }
+      | START           { $$ = 12; }
+      | END             { $$ = 3; }
+      | corner TOP
+        {
+            $$ = $1;
+            $$ &= ~3;
+            $$ |= 1;
+        }
+      | corner BOT
+        {
+            $$ = $1;
+            $$ &= ~3;
+            $$ |= 2;
+        }
+      | corner START    { $$ = 12; }
+      | corner END      { $$ = 3; }
 ;
 %%
