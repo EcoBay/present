@@ -24,9 +24,15 @@
 /* directions */
 %token UP DOWN LEFT RIGHT
 
+/* corners */
+%token TOP BOT START END
+%token DOT_N DOT_E DOT_W DOT_S DOT_C
+%token DOT_NE DOT_NW DOT_SE DOT_SW DOT_START DOT_END
+
 /* attributes */
 %token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
 %token DASHED CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
+u
 
 /* text positioning */
 %token CENTER LJUST RJUST ABOVE BELOW
@@ -48,12 +54,11 @@
 /* time units */
 %token SECONDS MILLISECONDS MINUTES
 
-
 %token EOL
 
 %type <a> program statement keyframe_stmt direction_stmt
-%type <a> primitive duration expr color
-%type <i> positioning easing
+%type <a> primitive duration expr color position
+%type <i> positioning easing corner optional_corner
 
 %left TEXT
 %left LJUST RJUST ABOVE BELOW
@@ -154,8 +159,22 @@ primitive: BOX
             { $$ = astAttr($1, ATTR_LEFT, $3); }
          | primitive BY expr ',' expr
             { $$ = astAttr($1, ATTR_BY, astOp(0, $3, $5)); }
+         | primitive FROM position
+            { $$ = astAttr($1, ATTR_FROM, $3); }
+         | primitive TO position
+            { $$ = astAttr($1, ATTR_TO, $3); }
          | primitive THEN
             { $$ = astAttr($1, ATTR_THEN, NULL); }
+         | primitive CHOP
+            { $$ = astAttr($1, ATTR_CHOP, astRef("circlerad")); }
+         | primitive CHOP expr
+            { $$ = astAttr($1, ATTR_CHOP, $3); }
+         | primitive WITH optional_corner
+            { $$ = astAttr($1, ATTR_WITH, astInt($3)); }
+         | primitive WITH corner
+            { $$ = astAttr($1, ATTR_WITH, astInt($3)); }
+         | primitive AT position
+            { $$ = astAttr($1, ATTR_AT, $3); }
          | primitive LARROW
             { $$ = astAttr($1, ATTR_LARROW, NULL); }
          | primitive RARROW
@@ -309,5 +328,46 @@ color: HEXCOLOR
             struct ast *a = astOp('*', $9, astNum(255));
             $$ = astRGBA(r, g, b, a);
         }
+;
+
+position: expr ',' expr
+            { $$ = astOp(0, $1, $3); }
+        | '(' position ')'
+            { $$ = $2; }
+;
+
+optional_corner: DOT_N      { $$ = 1; }
+               | DOT_E      { $$ = 4; }
+               | DOT_W      { $$ = 8; }
+               | DOT_S      { $$ = 2; }
+               | DOT_C      { $$ = 0; }
+               | DOT_NE     { $$ = 5; }
+               | DOT_NW     { $$ = 9; }
+               | DOT_SE     { $$ = 6; }
+               | DOT_SW     { $$ = 10; }
+               | DOT_START  { $$ = 12; }
+               | DOT_END    { $$ = 3; }
+;
+
+corner: TOP             { $$ = 1; }
+      | BOT             { $$ = 2; }
+      | LEFT            { $$ = 8; }
+      | RIGHT           { $$ = 4; }
+      | START           { $$ = 12; }
+      | END             { $$ = 3; }
+      | corner TOP
+        {
+            $$ = $1;
+            $$ &= ~3;
+            $$ |= 1;
+        }
+      | corner BOT
+        {
+            $$ = $1;
+            $$ &= ~3;
+            $$ |= 2;
+        }
+      | corner START    { $$ = 12; }
+      | corner END      { $$ = 3; }
 ;
 %%

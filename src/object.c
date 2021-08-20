@@ -103,7 +103,8 @@ newPrimitive(enum primitiveType t){
     p -> at = NULL;
     p -> with = 0;
     p -> spacing = 0;
-    p -> chop = 0;
+    p -> chop1 = 0;
+    p -> chop2 = 0;
     p -> arrowStyle = 0;
     p -> flags = 0;
     p -> fill = NULL;
@@ -145,6 +146,38 @@ chopBoundingBox(struct primitive *p){
     p -> se.x -= wid * 0.2928932188;
     p -> nw.y -= ht  * 0.2928932188;
     p -> nw.x += wid * 0.2928932188;
+
+}
+
+static void
+chopLine(struct primitive *p) {
+    // TODO: Allow for chopping arc (not part of standard pic)
+    if (p -> t < 4 || p -> t > 7) return;
+
+    struct vec2d l0 = { p -> start.x, p -> start.y };
+    struct location *l = p -> segments;
+
+#define SQ(a) ((a) * (a))
+    float C = sqrt(SQ(l0.x - l -> x)
+            + SQ(l0.y - l -> y));
+    float q = p -> chop1 / C;
+
+    p -> start.x += (l -> x - l0.x) * q;
+    p -> start.y += (l -> y - l0.y) * q;
+
+    while (l -> next) {
+        l0.x = l -> x;
+        l0.y = l -> y;
+        l = l -> next;
+    }
+
+    C = sqrt(SQ(l0.x - l -> x)
+      + SQ(l0.y - l -> y));
+    q = p -> chop2 / C;
+
+    l -> x -= (l -> x - l0.x) * q;
+    l -> y -= (l -> y - l0.y) * q;
+#undef SQ
 
 }
 
@@ -227,6 +260,62 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t 
     }
 }
 
+static void
+translatePrimitive(struct primitive *p) {
+    struct vec2d ref;
+    struct vec2d trl;
+
+    switch (p -> with) {
+        case 0: ref = p -> c; break;
+
+        case 1: ref = p -> n; break;
+        case 4: ref = p -> e; break;
+        case 8: ref = p -> w; break;
+        case 2: ref = p -> s; break;
+
+        case 5: ref = p -> ne; break;
+        case 9: ref = p -> nw; break;
+        case 6: ref = p -> se; break;
+        case 10: ref = p -> sw; break;
+
+        case 3: ref = p -> end; break;
+        case 12: ref = p -> start; break;
+    }
+
+    trl.x = p -> at -> x - ref.x;
+    trl.y = p -> at -> y - ref.y;
+
+#define INC_VEC(A, B) A.x += B.x; \
+    A.y += B.y
+    
+    INC_VEC(p -> n, trl);
+    INC_VEC(p -> e, trl);
+    INC_VEC(p -> w, trl);
+    INC_VEC(p -> s, trl);
+    INC_VEC(p -> c, trl);
+
+    INC_VEC(p -> nw, trl);
+    INC_VEC(p -> ne, trl);
+    INC_VEC(p -> sw, trl);
+    INC_VEC(p -> se, trl);
+
+    INC_VEC(p -> start, trl);
+    INC_VEC(p -> end, trl);
+
+
+    struct textList *t = p -> txt;
+    while (t) {
+        INC_VEC(t -> nw, trl);
+        t = t -> next;
+    }
+
+    struct location *l = p -> segments;
+    while (l) {
+        l -> x += trl.x;
+        l -> y += trl.y;
+        l = l -> next;
+    }
+}
 
 void
 preparePrimitive(struct primitive *p){
@@ -326,59 +415,91 @@ preparePrimitive(struct primitive *p){
             p -> end = ps[count - 1];
             break;
         case PRIM_ARC:
-            ps = malloc(4 * sizeof(struct vec2d));
-            count = 4;
+            if (p -> flags & 1) { 
+                ps = malloc(2 * sizeof(struct vec2d));
+                count = 2;
 
-            uint8_t dir = (p -> flags & 2) ? 1 : 3;
-            dir = (dir + p -> direction) % 4;
+                float x0 = p -> start.x;
+                float x1 = p -> segments -> x;
+                float y0 = p -> start.y;
+                float y1 = p -> segments -> y;
 
-            float invY = 1.0, invX = 1.0;
-            if (dir == 2 || dir == 1) invY = -1.0;
-            if (dir == 3 || dir == 2) invX = -1.0;
+#define SQ(a) ((a) * (a))
+                float q = sqrt(SQ(x0 - x1) + SQ(y0 - y1));
+                rad = MAX(q / 2.0, rad);
 
-            switch (dir) {
-                case 0:
-                case 2:
-                    ps[0] = (struct vec2d) {
-                        p -> start.x,
-                        p -> start.y
-                    };
-                    ps[1] = (struct vec2d) {
-                        p -> start.x,
-                        p -> start.y + rad * invX * 2,
-                    };
-                    ps[2] = (struct vec2d) {
-                        p -> start.x - rad * invX,
-                        p -> start.y + rad * invY,
-                    };
-                    ps[3] = (struct vec2d) {
-                        p -> start.x + rad * invX,
-                        p -> start.y + rad * invY,
-                    };
-                    break;
-                case 1:
-                case 3:
-                    ps[0] = (struct vec2d) {
-                        p -> start.x,
-                        p -> start.y
-                    };
-                    ps[1] = (struct vec2d) {
-                        p -> start.x + rad * invX * 2,
-                        p -> start.y,
-                    };
-                    ps[2] = (struct vec2d) {
-                        p -> start.x + rad * invX,
-                        p -> start.y - rad * invY,
-                    };
-                    ps[3] = (struct vec2d) {
-                        p -> start.x + rad * invX,
-                        p -> start.y + rad * invY,
-                    };
-                    break;
+                float x2 = ( x1 + x0 ) / 2.0;
+                float y2 = ( y1 + y0 ) / 2.0;
+
+                float cw = p -> flags & 2 ? -1 : 1;
+                float x3 = x2 + sqrt(SQ(rad)-SQ(q/2))*(y0-y1)/q*cw;
+                float y3 = y2 + sqrt(SQ(rad)-SQ(q/2))*(x1-x0)/q*cw;
+#undef SQ
+
+                ps[0].x = x3 + rad;
+                ps[0].y = y3 + rad;
+                ps[1].x = x3 - rad;
+                ps[1].y = y3 - rad;
+
+                p -> end.x = x1;
+                p -> end.y = y1;
+                p -> rad = rad;
+                p -> flags |= 64;
+
+            } else {
+                ps = malloc(4 * sizeof(struct vec2d));
+                count = 4;
+                uint8_t dir = (p -> flags & 2) ? 1 : 3;
+                dir = (dir + p -> direction) % 4;
+
+                float invY = 1.0, invX = 1.0;
+                if (dir == 2 || dir == 1) invY = -1.0;
+                if (dir == 3 || dir == 2) invX = -1.0;
+
+                switch (dir) {
+                    case 0:
+                    case 2:
+                        ps[0] = (struct vec2d) {
+                            p -> start.x,
+                            p -> start.y
+                        };
+                        ps[1] = (struct vec2d) {
+                            p -> start.x,
+                            p -> start.y + rad * invX * 2,
+                        };
+                        ps[2] = (struct vec2d) {
+                            p -> start.x - rad * invX,
+                            p -> start.y + rad * invY,
+                        };
+                        ps[3] = (struct vec2d) {
+                            p -> start.x + rad * invX,
+                            p -> start.y + rad * invY,
+                        };
+                        break;
+                    case 1:
+                    case 3:
+                        ps[0] = (struct vec2d) {
+                            p -> start.x,
+                            p -> start.y
+                        };
+                        ps[1] = (struct vec2d) {
+                            p -> start.x + rad * invX * 2,
+                            p -> start.y,
+                        };
+                        ps[2] = (struct vec2d) {
+                            p -> start.x + rad * invX,
+                            p -> start.y - rad * invY,
+                        };
+                        ps[3] = (struct vec2d) {
+                            p -> start.x + rad * invX,
+                            p -> start.y + rad * invY,
+                        };
+                        break;
+                }
+
+                p -> end = (p -> flags & 2) ? ps[2] : ps[3];
+                setDirection(dir);
             }
-
-            p -> end = (p -> flags & 2) ? ps[2] : ps[3];
-            setDirection(dir);
             break;
         case PRIM_TEXT_LIST:
             prepareTextList(p -> txt, &p -> start, &ps, &count);
@@ -392,6 +513,12 @@ preparePrimitive(struct primitive *p){
     }
 
     chopBoundingBox(p);
+    chopLine(p);
+
+    if (p -> at) {
+        translatePrimitive(p);
+    }
+
     free(ps);
     setCursor(&p -> end);
 }

@@ -19,6 +19,7 @@ enum nodetype {
     AST_TL,
     AST_RGBA, 
     AST_TEXT,
+    AST_INTL,
     AST_DRAW,
     AST_DIR,
     AST_KF,
@@ -62,7 +63,11 @@ enum attrib{
     ATTR_RAD,
     ATTR_DIAM,
     ATTR_EXPR,
-
+    ATTR_FROM,
+    ATTR_TO,
+    ATTR_CHOP,
+    ATTR_WITH,
+    ATTR_AT,
 };
 
 struct ast {
@@ -85,6 +90,7 @@ struct ast* astDir(int);
 struct ast* astKF(struct ast*, int);
 struct ast* astOp(int op, struct ast *, struct ast *);
 struct ast* astNum(float d);
+struct ast* astInt(int i);
 struct ast* astRef(char *s);
 
 #endif

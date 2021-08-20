@@ -151,6 +151,14 @@ astNum(float d) {
 }
 
 struct ast*
+astInt(int i) {
+    struct _ast_term *a = malloc(sizeof(struct _ast_term));
+    a -> t = AST_INTL;
+    a -> val.i = i;
+    return (struct ast*) a;
+}
+
+struct ast*
 astRef(char *s) {
     struct _ast_term *a = malloc(sizeof(struct _ast_term));
     a -> t = AST_REF; 
@@ -413,6 +421,41 @@ evalAttr(struct _ast_attr *a) {
         case ATTR_EXPR:
             p -> expr = eval(a -> val).d / 2.0;
             break;
+        case ATTR_FROM:
+            p -> start.x = eval(a -> val -> l).d;
+            p -> start.y = eval(a -> val -> r).d;
+            break;
+        case ATTR_TO:
+            if (p -> t > 2 && p -> t < 8) {
+                struct location *l;
+                l = getLastSegment(p);
+                l -> x = eval(a -> val -> l).d;
+                l -> y = eval(a -> val -> r).d;
+
+                p -> flags |= 1;
+            }
+            break;
+        case ATTR_CHOP:
+            if (p -> t > 3 && p -> t < 8) {
+                if (p -> flags & 128) {
+                    p -> chop2 = eval(a -> val).d;
+                } else {
+                    p -> chop1 = p -> chop2 = eval(a -> val).d;
+                    p -> flags |= 128;
+                }
+            }
+            break;
+        case ATTR_WITH:
+            p -> with = eval(a -> val).i;
+            break;
+        case ATTR_AT:
+            if (!p -> at) {
+                p -> at = malloc(sizeof(struct vec2d));
+            }
+
+            p -> at -> x = eval(a -> val -> l).d;
+            p -> at -> y = eval(a -> val -> r).d;
+            break;
     }
 
     return p;
@@ -580,6 +623,9 @@ eval(struct ast *a) {
             break;
         case AST_TEXT:
             ret.s = ((struct _ast_term*) a) -> val.s;
+            break;
+        case AST_INTL:
+            ret.i = ((struct _ast_term*) a) -> val.i;
             break;
         case AST_DRAW:
             struct primitive *p = eval(

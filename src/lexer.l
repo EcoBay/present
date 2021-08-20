@@ -27,6 +27,8 @@
 "left"      { return LEFT; }
 "right"     { return RIGHT; }
 "by"        { return BY; }
+"to"        { return TO; }
+"from"      { return FROM; }
 "then"      { return THEN; }
 
 "<-"        { return LARROW; }
@@ -47,6 +49,26 @@
 "above"     { return ABOVE; }
 "below"     { return BELOW; }
 
+".n"        { return DOT_N; }
+".e"        { return DOT_E; }
+".w"        { return DOT_W; }
+".s"        { return DOT_S; }
+".c"        { return DOT_C; }
+".ne"       { return DOT_NE; }
+".nw"       { return DOT_NW; }
+".se"       { return DOT_SE; }
+".sw"       { return DOT_SW; }
+".start"    { return DOT_START; }
+".end"      { return DOT_END; }
+
+"top"       { return TOP; }
+"bot"       { return BOT; }
+"start"     { return START; }
+"end"       { return END; }
+
+"at"        { return AT; }
+"with"      { return WITH; }
+
 "ht"        |
 "height"    { return HT; }
 "wid"       |
@@ -55,6 +77,7 @@
 "radius"    { return RAD; }
 "diam"      |
 "daimeter"  { return DIAM; }
+"chop"      { return CHOP; }
 
 ([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
                 yylval.d = strtof(yytext, NULL);

@@ -71,16 +71,18 @@ struct primitive {
     struct vec2d *at;
     uint8_t with;
     float spacing;
-    float chop;
+    float chop1;
+    float chop2;
     uint8_t arrowStyle;
     uint32_t flags;
-    /*  1 - hasSegment
-     *  2 - cw
-     *  4 - dashed
-     *  8 - dotted
-     * 16 - invis
-     * 32 - filled
-     * 64 - hasRadius
+    /*   1 - hasSegment
+     *   2 - cw
+     *   4 - dashed
+     *   8 - dotted
+     *  16 - invis
+     *  32 - filled
+     *  64 - hasRadius
+     * 128 - hasChop
      */
     struct color *fill;
     struct textList *txt;
