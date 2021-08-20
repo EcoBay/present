@@ -48,7 +48,7 @@ struct vec2d* initVec2d(float x, float y) {
 %token BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE MOVE
 
 /* keywords */
-%token FOR
+%token FOR OF HERE AND BETWEEN
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -70,7 +70,7 @@ u
 %token SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS RGBA
 
 /* values */
-%token <s> TEXT HEXCOLOR
+%token <s> TEXT HEXCOLOR IDENTIFIER LABEL
 %token <d> NUMBER
 
 /* present extensions */
@@ -90,7 +90,7 @@ u
 %type <i> optional_corner
 %type <d> expr duration
 %type <c> color
-%type <v> position
+%type <v> position place position_not_place expr_pair
 
 %left TEXT
 %left LJUST RJUST ABOVE BELOW
@@ -98,11 +98,16 @@ u
 %left LEFT RIGHT
 %left CHOP SOLID DASHED DOTTED UP DOWN FILL
 
-%left VARIABLE NUMBER '(' SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS
+%left LABEL
+%left IDENTIFIER NUMBER '(' SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS
+%left HERE
 %left BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE '['
 
 %left HT WID RAD DIAM FROM TO AT
 %left ','
+
+%left BETWEEN OF
+%left AND
 
 %left '+' '-'
 %left '*' '/' '%'
@@ -124,6 +129,20 @@ element: primitive
             {
                 preparePrimitive($1);
                 newDrawEvent($1);
+            }
+       | IDENTIFIER ':' primitive
+            {
+                preparePrimitive($3);
+                struct event *e = newDrawEvent($3);
+                union T v = { .e = e };
+                setSym($1, SYM_EVENT, v);
+                free($1);
+            }
+       | IDENTIFIER '=' expr
+            {
+                union T v = { .d = $3 };
+                setSym($1, SYM_DOUBLE, v);
+                free($1);
             }
        | direction_stmt
 ;
@@ -683,6 +702,13 @@ positioning: %empty
 ;
 
 expr: NUMBER
+    | IDENTIFIER
+        {
+            struct symbol *s;
+            GET_FLOAT_SYM(s, $1);
+            $$ = s -> val.d;
+            free($1);
+        }
     | expr '+' expr
         { $$ = $1 + $3; }
     | expr '-' expr
@@ -824,10 +850,136 @@ color: HEXCOLOR
         }
 ;
 
-position: expr ',' expr
+position: position_not_place
+        | place
+        | '(' place ')'         { $$ = $2; }
+;
+
+position_not_place: expr_pair
+                  | position '+' expr_pair
+                    {
+                        $$ = initVec2d($1 -> x + $3 -> x,
+                            $1 -> y + $3 -> y);
+                        free($1);
+                        free($3);
+                    }
+                  | '(' position '+' expr_pair ')'
+                    {
+                        $$ = initVec2d($2 -> x + $4 -> x,
+                            $2 -> y + $4 -> y);
+                        free($2);
+                        free($4);
+                    }
+                  | position '-' expr_pair
+                    {
+                        $$ = initVec2d($1 -> x - $3 -> x,
+                            $1 -> y - $3 -> y);
+                        free($1);
+                        free($3);
+                    }
+                  | '(' position '-' expr_pair ')'
+                    {
+                        $$ = initVec2d($2 -> x - $4 -> x,
+                            $2 -> y - $4 -> y);
+                        free($2);
+                        free($4);
+                    }
+                  | '(' position ',' position ')'
+                    {
+                        $$ = initVec2d($2 -> x, $4 -> y);
+                        free($2);
+                        free($4);
+                    }
+                  | expr BETWEEN position AND position
+                    {
+                        $$ = initVec2d(0,0);
+                        $$ -> x = (1 - $1)*$3 -> x + $1 * $5 -> x;
+                        $$ -> y = (1 - $1)*$3 -> y + $1 * $5 -> y;
+                        free($3);
+                        free($5);
+                    }
+                  | '(' expr BETWEEN position AND position ')'
+                    {
+                        $$ = initVec2d(0,0);
+                        $$ -> x = (1 - $2)*$4 -> x + $2 * $6 -> x;
+                        $$ -> y = (1 - $2)*$4 -> y + $2 * $6 -> y;
+                        free($4);
+                        free($6);
+                    }
+                  | expr '[' position ',' position ']'
+                    {
+                        $$ = initVec2d(0,0);
+                        $$ -> x = (1 - $1)*$3 -> x + $1 * $5 -> x;
+                        $$ -> y = (1 - $1)*$3 -> y + $1 * $5 -> y;
+                        free($3);
+                        free($5);
+                    }
+                  | '(' expr '[' position ',' position ']' ')'
+                    {
+                        $$ = initVec2d(0,0);
+                        $$ -> x = (1 - $2)*$4 -> x + $2 * $6 -> x;
+                        $$ -> y = (1 - $2)*$4 -> y + $2 * $6 -> y;
+                        free($4);
+                        free($6);
+                    }
+;
+
+expr_pair: expr ',' expr
             { $$ = initVec2d($1, $3); }
-        | '(' position ')'
+         | '(' expr_pair ')'
             { $$ = $2; }
+;
+
+place: LABEL optional_corner
+        {
+            struct symbol *s;
+            GET_EVENT_SYM(s, $1);
+
+            struct primitive *p = s -> val.e -> a.pr;
+            struct vec2d *e = malloc(sizeof(struct vec2d));
+            getLoc(p, e, $2);
+            free($1);
+            $$ = e;
+        }
+     | LABEL
+        {
+            struct symbol *s;
+            GET_EVENT_SYM(s, $1);
+
+            struct primitive *p = s -> val.e  -> a.pr;
+            struct vec2d *e = malloc(sizeof(struct vec2d));
+            getLoc(p, e, 0);
+            free($1);
+            $$ = e;
+        }
+     | corner OF LABEL
+        {
+            struct symbol *s;
+            GET_EVENT_SYM(s, $3);
+
+            struct primitive *p = s -> val.e  -> a.pr;
+            struct vec2d *e = malloc(sizeof(struct vec2d));
+            getLoc(p, e, $1);
+            free($3);
+            $$ = e;
+        }
+     | optional_corner OF LABEL
+        {
+            struct symbol *s;
+            GET_EVENT_SYM(s, $3);
+
+            struct primitive *p = s -> val.e  -> a.pr;
+            struct vec2d *e = malloc(sizeof(struct vec2d));
+            getLoc(p, e, $1);
+            free($3);
+            $$ = e;
+        }
+     | HERE
+        {
+            struct vec2d *e = malloc(sizeof(struct vec2d));
+            getCursor(e);
+            $$ = e;
+        }
 ;
 
 optional_corner: DOT_N      { $$ = 1; }

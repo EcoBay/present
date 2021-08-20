@@ -63,7 +63,7 @@ newKeyframe(float duration, enum easingFunction easingFunc){
     }
 }
 
-void
+struct event*
 newDrawEvent(struct primitive *p){
     struct scene *s = g_presentation -> scenes;
     s = getLast(s);
@@ -89,6 +89,7 @@ newDrawEvent(struct primitive *p){
         t -> next = e;
     }
 
+    return e;
 }
 
 struct primitive*
@@ -574,6 +575,26 @@ getCursor(struct vec2d* x){
         s = g_presentation -> scenes;
     }
     memcpy(x, &s -> cursor, sizeof(struct vec2d));
+}
+
+void
+getLoc(struct primitive* p, struct vec2d* v, uint8_t corner) {
+    switch (corner) {
+        case 0: (*v) = p -> c; break;
+
+        case 1: (*v) = p -> n; break;
+        case 4: (*v) = p -> e; break;
+        case 8: (*v) = p -> w; break;
+        case 2: (*v) = p -> s; break;
+
+        case 5: (*v) = p -> ne; break;
+        case 9: (*v) = p -> nw; break;
+        case 6: (*v) = p -> se; break;
+        case 10: (*v) = p -> sw; break;
+
+        case 3: (*v) = p -> end; break;
+        case 12: (*v) = p -> start; break;
+    }
 }
 
 struct location*

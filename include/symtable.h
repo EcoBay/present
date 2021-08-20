@@ -29,7 +29,7 @@ struct symTable {
 };
 
 struct symbol* lookup(char*);
-void defineSym(char *, enum symType, union T);
+void setSym(char *, enum symType, union T);
 int resetSym(char *);
 
 void pushTable();
@@ -37,11 +37,21 @@ struct symTable* popTable();
 
 #define GET_FLOAT_SYM(Y, X) Y = lookup(X);                                      \
     if (!Y) {                                                                   \
-        fprintf(stderr,"Error: \"" X "\" variable used before assignment\n");   \
+        fprintf(stderr,"Error: \"%s\" variable used before assignment\n", X);   \
         abort();                                                                \
     }                                                                           \
     if (Y -> t != SYM_DOUBLE) {                                                 \
-        fprintf(stderr,"Error: \"" X "\" variable must be double\n");           \
+        fprintf(stderr,"Error: \"%s\" variable must be float\n", X);            \
+        abort();                                                                \
+    }
+
+#define GET_EVENT_SYM(Y, X) Y = lookup(X);                                      \
+    if (!Y) {                                                                   \
+        fprintf(stderr,"Error: \"%s\" variable used before assignment\n", X);   \
+        abort();                                                                \
+    }                                                                           \
+    if (Y -> t != SYM_EVENT) {                                                  \
+        fprintf(stderr,"Error: \"%s\" variable must be event\n", X);            \
         abort();                                                                \
     }
 
