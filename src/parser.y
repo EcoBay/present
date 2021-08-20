@@ -116,13 +116,19 @@ program: statement
 ;
 
 statement: %empty
-         | primitive        
+         | element
+         | present
+;
+
+element: primitive        
             {
                 preparePrimitive($1);
                 newDrawEvent($1);
             }
-         | direction_stmt
-         | keyframe_stmt
+       | direction_stmt
+;
+
+present: keyframe_stmt
 ;
 
 keyframe_stmt: easing KEYFRAME
