@@ -134,7 +134,7 @@ void* getLast(void*);
 
 void newScene();
 void newKeyframe(float duration, enum easingFunction);
-void newDrawEvent(struct primitive*);
+struct event*  newDrawEvent(struct primitive*);
 struct primitive* newPrimitive(enum primitiveType);
 void preparePrimitive(struct primitive*);
 
@@ -144,6 +144,7 @@ void setDirection(uint8_t);
 uint8_t getDirection();
 void setCursor(struct vec2d*);
 void getCursor(struct vec2d*);
+void getLoc(struct primitive*, struct vec2d*, uint8_t corner);
 
 struct location* getLastSegment(struct primitive*);
 struct textList* addTextList(RsvgHandle*, uint8_t, struct textList*);

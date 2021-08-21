@@ -2,6 +2,7 @@
 #define AST_H
 
 #include "object.h"
+#include "symtable.h"
 
 union ast_type {
     char *s;
@@ -10,6 +11,7 @@ union ast_type {
     int i;
     float d;
     struct color *c;
+    struct event *e;
 };
 
 enum nodetype {
@@ -23,6 +25,8 @@ enum nodetype {
     AST_DRAW,
     AST_DIR,
     AST_KF,
+    AST_ASGN,
+    AST_LBL,
 
     /* expressions */
     AST_NUM,
@@ -88,9 +92,13 @@ struct ast* astText(char *s);
 struct ast* astDraw(struct ast*);
 struct ast* astDir(int);
 struct ast* astKF(struct ast*, int);
-struct ast* astOp(int op, struct ast *, struct ast *);
+struct ast* astOp(int op, struct ast*, struct ast*);
 struct ast* astNum(float d);
+struct ast* astLoc(char *, int);
+struct ast* astHere();
 struct ast* astInt(int i);
-struct ast* astRef(char *s);
+struct ast* astRef(char*);
+struct ast* astLbl(char*);
+struct ast* astAsgn(char*, enum symType, struct ast*);
 
 #endif

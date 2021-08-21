@@ -27,17 +27,31 @@ lookup(char *sym) {
 }
 
 void
-defineSym(char *sym, enum symType t, union T val) {
+setSym(char *sym, enum symType t, union T val) {
     unsigned h = hash(sym) & HASH_MOD;
 
-    struct symbol *s;
-    s = malloc(sizeof(struct symbol));
-    s -> sym = strdup(sym);
-    s -> next = g_symtable -> table[h];
-    s -> t = t;
-    s -> val = val;
+    struct symbol *s = g_symtable -> table[h];
 
-    g_symtable -> table[h] = s;
+    while (s && strcmp(s -> sym, sym)) {
+        s = s -> next;
+    }
+
+    if (s) {
+        if (s -> t != t) {
+            fprintf(stderr, "Error: Variable \"%s\" is already"
+                    "defined under different type\n", t);
+            abort();
+        }
+        s -> val = val;
+    } else {
+        s = malloc(sizeof(struct symbol));
+        s -> sym = strdup(sym);
+        s -> next = g_symtable -> table[h];
+        s -> t = t;
+        s -> val = val;
+
+        g_symtable -> table[h] = s;
+    }
 }
 
 int

@@ -1,7 +1,6 @@
 #include "ast.h"
 #include "tex.h"
 #include "present.h"
-#include "symtable.h"
 #include <math.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -19,6 +18,13 @@ struct _ast_attr {
     enum attrib attr;
     struct ast* p;
     struct ast* val;
+};
+
+struct _ast_asgn {
+    int t;
+    char *sym;
+    enum symType varT;
+    struct ast *a;
 };
 
 struct _ast_tl {
@@ -151,6 +157,37 @@ astNum(float d) {
 }
 
 struct ast*
+astLoc(char *sym, int corner) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = 0;
+
+    a -> l = malloc(sizeof(struct ast*));
+    a -> l -> t = 1;
+    a -> l -> l = astLbl(sym);
+    a -> l -> r = astInt(corner);
+
+    a -> r = malloc(sizeof(struct ast*));
+    a -> r -> t = 2;
+    a -> r -> l = astLbl(sym);
+    a -> r -> r = astInt(corner);
+
+    return (struct ast*) a;
+}
+
+struct ast*
+astHere() {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = 0;
+
+    a -> l = malloc(sizeof(struct ast*));
+    a -> l -> t = 3;
+
+    a -> r = malloc(sizeof(struct ast*));
+    a -> r -> t = 4;
+    return (struct ast*) a;
+}
+
+struct ast*
 astInt(int i) {
     struct _ast_term *a = malloc(sizeof(struct _ast_term));
     a -> t = AST_INTL;
@@ -163,6 +200,24 @@ astRef(char *s) {
     struct _ast_term *a = malloc(sizeof(struct _ast_term));
     a -> t = AST_REF; 
     a -> val.s = s;
+    return (struct ast*) a;
+}
+
+struct ast*
+astLbl(char *s) {
+    struct _ast_term *a = malloc(sizeof(struct _ast_term));
+    a -> t = AST_LBL; 
+    a -> val.s = s;
+    return (struct ast*) a;
+}
+
+struct ast*
+astAsgn(char *sym, enum symType T, struct ast* val) {
+    struct _ast_asgn *a = malloc(sizeof(struct _ast_asgn));
+    a -> t = AST_ASGN;
+    a -> sym = sym;
+    a -> varT = T;
+    a -> a = val;
     return (struct ast*) a;
 }
 
@@ -469,6 +524,40 @@ eval(struct ast *a) {
 
     switch (a -> t) {
         /* expresions */
+        case 1:
+            {
+                struct vec2d *e = malloc(sizeof(struct vec2d));
+                struct primitive *p = eval(a -> l).e -> a.pr;
+                getLoc(p, e, eval(a -> r).i);
+                ret.d = e -> x;
+                free(e);
+            }
+            break;
+        case 2:
+            {
+                struct vec2d *e = malloc(sizeof(struct vec2d));
+                struct primitive *p = eval(a -> l).e -> a.pr;
+                getLoc(p, e, eval(a -> r).i);
+                ret.d = e -> y;
+                free(e);
+            }
+            break;
+        case 3:
+            {
+                struct vec2d *e = malloc(sizeof(struct vec2d));
+                getCursor(e);
+                ret.d = e -> x;
+                free(e);
+            }
+            break;
+        case 4:
+            {
+                struct vec2d *e = malloc(sizeof(struct vec2d));
+                getCursor(e);
+                ret.d = e -> y;
+                free(e);
+            }
+            break;
         case AST_NUM:
             ret.d = ((struct _ast_term*) a) -> val.d;
             break;
@@ -632,7 +721,7 @@ eval(struct ast *a) {
                 ((struct _ast_one*) a ) -> a
             ).p;
             preparePrimitive(p);
-            newDrawEvent(p);
+            ret.e = newDrawEvent(p);
             break;
         case AST_DIR:
             setDirection( ((struct _ast_term*) a ) -> val.i );
@@ -644,6 +733,21 @@ eval(struct ast *a) {
                 newKeyframe(eval(d).d, t_kf -> easingFunc);
             } else {
                 newKeyframe(1.0, t_kf -> easingFunc);
+            }
+            break;
+        case AST_LBL:
+            GET_EVENT_SYM(s, ((struct _ast_term*) a) -> val.s);
+            ret.e = s -> val.e;
+            break;
+        case AST_ASGN:
+            struct _ast_asgn *t_asgn = (struct _ast_asgn*) a;
+            union T v;
+            if (t_asgn -> varT == SYM_DOUBLE) {
+                v.d = eval(t_asgn -> a).d;
+                setSym(t_asgn -> sym, SYM_DOUBLE, v);
+            } else {
+                v.e = eval(t_asgn -> a).e;
+                setSym(t_asgn -> sym, SYM_EVENT, v);
             }
             break;
 

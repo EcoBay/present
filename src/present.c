@@ -57,10 +57,11 @@ int main(int argc, char **argv){
     int c = sizeof(builtIn) / sizeof(builtIn[0]);
     for (int i = 0; i < c; i++) {
         union T v = { .d = builtIn[i].val };
-        defineSym(builtIn[i].sym, SYM_DOUBLE, v);
+        setSym(builtIn[i].sym, SYM_DOUBLE, v);
     }
 
     initPresentation();
+    pushTable();        // For macro and type checking during parsing and lexing
     while (yyparse());
     renderPresentation();
     return 0;

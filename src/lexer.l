@@ -1,10 +1,14 @@
 %{
-#include "present.tab.h"
 #include "present.h"
+#include "symtable.h"
+#include "present.tab.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+
+#define yyterminate() popTable(); return YY_NULL
+
 %}
 
 %option yylineno nodefault noyywrap
@@ -21,6 +25,10 @@
 "move"      { return MOVE; }
 
 "for"       { return FOR; }
+"of"        { return OF; }
+"here"      { return HERE; }
+"and"       { return AND; }
+"between"   { return BETWEEN; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
@@ -79,23 +87,6 @@
 "daimeter"  { return DIAM; }
 "chop"      { return CHOP; }
 
-([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
-                yylval.d = strtof(yytext, NULL);
-                return NUMBER;
-            }
-\"([^\\\"]|\\.)*\" {
-                yytext[yyleng - 1] = '\0';
-                yylval.s = strdup(yytext + 1);
-                return TEXT;
-            }
-#[0-9a-fA-F]{8} |
-#[0-9a-fA-F]{6} |
-#[0-9a-fA-F]{4} |
-#[0-9a-fA-F]{3} {
-                yylval.s = strdup(yytext + 1);
-                return HEXCOLOR;
-            }
-
 "sin"       { return SIN; }
 "cos"       { return COS; }
 "atan2"     { return ATAN2; }
@@ -127,6 +118,33 @@
 "m"         |
 "minute"s?  { return MINUTES; }
 
+[a-zA-Z_][a-zA-Z0-9_]* {
+                yylval.s = strdup(yytext);
+                struct symbol *s;
+                s = lookup(yytext);
+                if (!s || s -> t == SYM_DOUBLE) {
+                    return IDENTIFIER;
+                } else {
+                    return LABEL;
+                }
+            }
+([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
+                yylval.d = strtof(yytext, NULL);
+                return NUMBER;
+            }
+\"([^\\\"]|\\.)*\" {
+                yytext[yyleng - 1] = '\0';
+                yylval.s = strdup(yytext + 1);
+                return TEXT;
+            }
+#[0-9a-fA-F]{8} |
+#[0-9a-fA-F]{6} |
+#[0-9a-fA-F]{4} |
+#[0-9a-fA-F]{3} {
+                yylval.s = strdup(yytext + 1);
+                return HEXCOLOR;
+            }
+
 "\\#".*
 [ \t]
 \n          { return EOL; }
@@ -140,6 +158,10 @@
 "^"         |
 "("         |
 ")"         |
+"["         |
+"]"         |
+"="         |
+":"         |
 ","         { return *yytext; }
 
 .           {

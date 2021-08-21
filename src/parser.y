@@ -5,7 +5,6 @@
 #include <math.h>
 %}
 
-
 %union {
     struct ast *a;
     char *s;
@@ -19,7 +18,7 @@
 %token BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE MOVE
 
 /* keywords */
-%token FOR
+%token FOR OF HERE AND BETWEEN
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -41,7 +40,7 @@ u
 %token SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS RGBA
 
 /* values */
-%token <s> TEXT HEXCOLOR
+%token <s> TEXT HEXCOLOR IDENTIFIER LABEL
 %token <d> NUMBER
 
 /* present extensions */
@@ -56,8 +55,10 @@ u
 
 %token EOL
 
-%type <a> program statement keyframe_stmt direction_stmt
-%type <a> primitive duration expr color position
+%type <a> program statement element present
+%type <a> keyframe_stmt direction_stmt
+%type <a> primitive expr duration color position place
+%type <a> position_not_place expr_pair
 %type <i> positioning easing corner optional_corner
 
 %left TEXT
@@ -66,11 +67,16 @@ u
 %left LEFT RIGHT
 %left CHOP SOLID DASHED DOTTED UP DOWN FILL
 
-%left VARIABLE NUMBER '(' SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS
+%left LABEL
+%left IDENTIFIER NUMBER '(' SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS
+%left HERE
 %left BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE '['
 
 %left HT WID RAD DIAM FROM TO AT
 %left ','
+
+%left BETWEEN OF
+%left AND
 
 %left '+' '-'
 %left '*' '/' '%'
@@ -78,17 +84,39 @@ u
 %right '^'
 
 %%
-root: program   { eval($1); }
+root: program                       { eval($1); }
 
-program: statement              { $$ = astStmt($1, NULL); }
-       | program EOL statement  { $$ = astStmt($1, $3); }
-       | program ';' statement  { $$ = astStmt($1, $3); }
+program: statement                  { $$ = astStmt($1, NULL); }
+       | program EOL statement      { $$ = astStmt($1, $3); }
+       | program ';' statement      { $$ = astStmt($1, $3); }
 ;
 
-statement: %empty               { $$ = NULL; }
-         | primitive            { $$ = astDraw($1); }
-         | direction_stmt       { $$ = $1; }
-         | keyframe_stmt        { $$ = $1; }
+statement: %empty                   { $$ = NULL; }
+         | element                  { $$ = $1; }
+         | present                  { $$ = $1; }
+;
+
+element: primitive
+            { $$ = astDraw($1); }
+       | IDENTIFIER ':' primitive
+            {
+                struct ast* a = astDraw($3);
+                $$ = astAsgn($1, SYM_EVENT, a);
+
+                union T t = {.d = 0};
+                setSym($1, SYM_EVENT, t);
+            }
+       | IDENTIFIER '=' expr
+            {
+                $$ = astAsgn($1, SYM_DOUBLE, $3);
+
+                union T t = {.d = 0};
+                setSym($1, SYM_DOUBLE, t);
+            }
+       | direction_stmt
+;
+
+present: keyframe_stmt                      { $$ = $1; }
 ;
 
 keyframe_stmt: easing KEYFRAME              { $$ = astKF(NULL, $1); }
@@ -250,6 +278,8 @@ positioning: %empty
 
 expr: NUMBER
         { $$ = astNum($1); }
+    | IDENTIFIER
+        { $$ = astRef($1); }
     | expr '+' expr
         { $$ = astOp('+', $1, $3); }
     | expr '-' expr
@@ -330,10 +360,133 @@ color: HEXCOLOR
         }
 ;
 
-position: expr ',' expr
-            { $$ = astOp(0, $1, $3); }
-        | '(' position ')'
-            { $$ = $2; }
+position: position_not_place
+        | place
+        | '(' place ')'         { $$ = $2; }
+;
+
+position_not_place: expr_pair
+                  | position '+' expr_pair
+                    {
+                        $$ = astOp(0,
+                            astOp('+', $1 -> l, $3 -> l),
+                            astOp('+', $1 -> r, $3 -> r)
+                        );
+                        free($1);
+                        free($3);
+                    }
+                  | '(' position '+' expr_pair ')'
+                    {
+                        $$ = astOp(0,
+                            astOp('+', $2 -> l, $4 -> l),
+                            astOp('+', $2 -> r, $4 -> r)
+                        );
+                        free($2);
+                        free($4);
+                    }
+                  | position '-' expr_pair
+                    {
+                        $$ = astOp(0,
+                            astOp('-', $1 -> l, $3 -> l),
+                            astOp('-', $1 -> r, $3 -> r)
+                        );
+                        free($1);
+                        free($3);
+                    }
+                  | '(' position '-' expr_pair ')'
+                    {
+                        $$ = astOp(0,
+                            astOp('-', $2 -> l, $4 -> l),
+                            astOp('-', $2 -> r, $4 -> r)
+                        );
+                        free($2);
+                        free($4);
+                    }
+                  | '(' position ',' position ')'
+                    {
+                        $$ = astOp(0, $2 -> l, $4 -> r);
+                        free($2);
+                        free($4);
+                    }
+                  | expr BETWEEN position AND position
+                    {
+                        $$ = astOp(0, NULL, NULL);
+                        $$ -> l = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $1),
+                                $3 -> l),
+                            astOp('*', $1, $5 -> l));
+                        $$ -> r = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $1),
+                                $3 -> r),
+                            astOp('*', $1, $5 -> r));
+
+                        free($3);
+                        free($5);
+                    }
+                  | '(' expr BETWEEN position AND position ')'
+                    {
+                        $$ = astOp(0, NULL, NULL);
+                        $$ -> l = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $2),
+                                $4 -> l),
+                            astOp('*', $2, $6 -> l));
+                        $$ -> r = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $2),
+                                $4 -> r),
+                            astOp('*', $2, $6 -> r));
+
+                        free($4);
+                        free($6);
+                    }
+                  | expr '[' position ',' position ']'
+                    {
+                        $$ = astOp(0, NULL, NULL);
+                        $$ -> l = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $1),
+                                $3 -> l),
+                            astOp('*', $1, $5 -> l));
+                        $$ -> r = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $1),
+                                $3 -> r),
+                            astOp('*', $1, $5 -> r));
+
+                        free($3);
+                        free($5);
+                    }
+                  | '(' expr '[' position ',' position ']' ')'
+                    {
+                        $$ = astOp(0, NULL, NULL);
+                        $$ -> l = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $2),
+                                $4 -> l),
+                            astOp('*', $2, $6 -> l));
+                        $$ -> r = astOp('+',
+                            astOp('*',
+                                astOp('-', astNum(1.0), $2),
+                                $4 -> r),
+                            astOp('*', $2, $6 -> r));
+
+                        free($4);
+                        free($6);
+                    }
+;
+
+expr_pair: expr ',' expr        { $$ = astOp(0, $1, $3); }
+         | '(' expr_pair ')'    { $$ = $2; }
+;
+
+place: LABEL optional_corner    { $$ = astLoc($1, $2); }
+     | LABEL                    { $$ = astLoc($1, 0); }
+     | corner OF LABEL          { $$ = astLoc($3, $1); }
+     | optional_corner OF LABEL { $$ = astLoc($3, $1); }
+     | HERE                     { $$ = astHere(); }
 ;
 
 optional_corner: DOT_N      { $$ = 1; }
