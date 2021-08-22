@@ -8,10 +8,16 @@
 #include <stdarg.h>
 
 #define yyterminate() popTable(); return YY_NULL
+int G_ARGCTR;
+char *G_IDEN;
+char *G_ARGS[10];
 
+char* str_replace(char*, char*, char*);
+void expand_macro();
 %}
 
 %option yylineno nodefault noyywrap
+%x MACRO_CALL MACRO_ARG_0 MACRO_ARG_1
 
 %%
 
@@ -29,6 +35,7 @@
 "here"      { return HERE; }
 "and"       { return AND; }
 "between"   { return BETWEEN; }
+"define"    { return DEFINE; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
@@ -119,24 +126,94 @@
 "minute"s?  { return MINUTES; }
 
 [a-zA-Z_][a-zA-Z0-9_]* {
-                yylval.s = strdup(yytext);
                 struct symbol *s;
                 s = lookup(yytext);
                 if (!s || s -> t == SYM_DOUBLE) {
+                    yylval.s = strdup(yytext);
                     return IDENTIFIER;
-                } else {
+                } else if (s -> t == SYM_EVENT) {
+                    yylval.s = strdup(yytext);
                     return LABEL;
+                } else {
+                    G_IDEN = strdup(yytext);
+                    BEGIN MACRO_CALL;
                 }
             }
+
+/* TODO: Allow for balanced parenthesis */
+<MACRO_CALL>"("         {
+                for (int i = 0; i < 10; i++) {
+                    G_ARGS[i] = "";
+                }
+                
+                G_ARGCTR = 0;
+                BEGIN MACRO_ARG_0;
+            }
+<MACRO_CALL>"{"         {
+                for (int i = 0; i < 10; i++) {
+                    G_ARGS[i] = "";
+                }
+                
+                G_ARGCTR = 0;
+                BEGIN MACRO_ARG_1;
+            }
+<MACRO_ARG_0>[^,)]*","  |
+<MACRO_ARG_1>[^,}]*","  { 
+                yytext[yyleng - 1] = '\0';
+                G_ARGS[G_ARGCTR++] = strdup(yytext);
+                if (G_ARGCTR > 9) {
+                    yyerror("Macro arguments count exceeds 10\n");
+                    abort();
+                }
+            }
+<MACRO_ARG_0>[^,)]*")"   | 
+<MACRO_ARG_1>[^,}]*"}"   { 
+                yytext[yyleng - 1] = '\0';
+                G_ARGS[G_ARGCTR++] = strdup(yytext);
+                if (G_ARGCTR > 9) {
+                    yyerror("Macro arguments count exceeds 10\n");
+                    abort();
+                }
+                expand_macro();
+                BEGIN INITIAL;
+            }
+
+<MACRO_ARG_0><<EOF>>    |
+<MACRO_ARG_1><<EOF>>    |
+<MACRO_CALL><<EOF>>     {
+                yyerror("Macro call not closed\n");
+                abort();
+            }
+
+
+<MACRO_ARG_0>.          |
+<MACRO_ARG_1>.          |
+<MACRO_CALL>.           {
+                yyerror(
+                    "Unexpected character %c at line no. %d\n",
+                    *yytext, yylineno
+                );
+                abort();
+            }
+
 ([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
                 yylval.d = strtof(yytext, NULL);
                 return NUMBER;
             }
-\"([^\\\"]|\\.)*\" {
+"X"[^X]*"X"     |
+"%"[^%]*"%"     |
+"["[^\]]*"]"    |
+"{"[^}]*"}"     {
+                yytext[yyleng - 1] = '\0';
+                yylval.s = strdup(yytext + 1);
+                return TEMPLATE;
+            }
+\"([^\\\"]|\\.)*\"  {
                 yytext[yyleng - 1] = '\0';
                 yylval.s = strdup(yytext + 1);
                 return TEXT;
             }
+
 #[0-9a-fA-F]{8} |
 #[0-9a-fA-F]{6} |
 #[0-9a-fA-F]{4} |
@@ -164,6 +241,12 @@
 ":"         |
 ","         { return *yytext; }
 
+<<EOF>>     {
+                yypop_buffer_state();
+                if (!YY_CURRENT_BUFFER) {
+                    yyterminate();
+                }
+            }
 .           {
                 yyerror(
                     "Unexpected character %c at line no. %d\n",
@@ -184,4 +267,65 @@ void yyerror(char *s, ...){
         vfprintf(stderr, s, ap);
         va_end(ap);
     }
+}
+
+char *str_replace(char *orig, char *rep, char *with) {
+    char *result;
+    char *ins;
+    char *tmp;
+    int len_rep;
+    int len_with;
+    int len_front;
+    int count;
+
+    if (!orig || !rep)
+        return NULL;
+    len_rep = strlen(rep);
+    if (len_rep == 0)
+        return NULL;
+    if (!with)
+        with = "";
+    len_with = strlen(with);
+
+    ins = orig;
+    for (count = 0; tmp = strstr(ins, rep); ++count) {
+        ins = tmp + len_rep;
+    }
+
+    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+    if (!result)
+        return NULL;
+
+    while (count--) {
+        ins = strstr(orig, rep);
+        len_front = ins - orig;
+        tmp = strncpy(tmp, orig, len_front) + len_front;
+        tmp = strcpy(tmp, with) + len_with;
+        orig += len_front + len_rep;
+    }
+    strcpy(tmp, orig);
+    return result;
+}
+
+void expand_macro() {
+    struct symbol *s;
+    s = lookup(G_IDEN);
+
+    char *a, *b;
+    a = b = strdup(s -> val.s);
+
+    for (int i = 0; i < 10; i++) {
+        char r[3] = "$1";
+        r[1] += i;
+
+        a = str_replace(a, r, G_ARGS[i]);
+
+        free(b);
+        b = a;
+    }
+
+    yypush_buffer_state(YY_CURRENT_BUFFER);
+    yy_scan_string(a);
+    free(a);
 }

@@ -18,7 +18,7 @@
 %token BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE MOVE
 
 /* keywords */
-%token FOR OF HERE AND BETWEEN
+%token FOR OF HERE AND BETWEEN DEFINE
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -40,7 +40,7 @@ u
 %token SIN COS ATAN2 LOG EXP SQRT MAX MIN INT RAND ABS RGBA
 
 /* values */
-%token <s> TEXT HEXCOLOR IDENTIFIER LABEL
+%token <s> TEXT HEXCOLOR IDENTIFIER LABEL TEMPLATE
 %token <d> NUMBER
 
 /* present extensions */
@@ -114,6 +114,12 @@ element: primitive
                 setSym($1, SYM_DOUBLE, t);
             }
        | direction_stmt
+       | DEFINE IDENTIFIER TEMPLATE
+            {
+                $$ = NULL;
+                union T v = {.s = $3};
+                setSym($2, SYM_MACRO, v);
+            }
 ;
 
 present: keyframe_stmt                      { $$ = $1; }
