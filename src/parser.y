@@ -130,8 +130,7 @@ element: primitive
         | reset
         | PRINT expr
             {
-                printf("%g\n", eval($2).d);
-                $$ = NULL;
+                $$ = astPrn($2);
             }
 ;
 

@@ -24,7 +24,6 @@ getLast(void *i){
 
 void
 newScene(){
-    pushTable();
     struct scene *s = malloc(sizeof(struct scene));
     s -> next = NULL;
     s -> keyframes = NULL;
@@ -36,12 +35,14 @@ newScene(){
         struct scene *t = g_presentation -> scenes;
         t = getLast(t);
         t -> next = s;
+        popTable();
     }
+
+    pushTable();
 }
 
 void
 newKeyframe(float duration, enum easingFunction easingFunc){
-    pushTable();
     struct keyframe *k = malloc(sizeof(struct keyframe));
     k -> next = NULL;
     k -> events = NULL;
@@ -54,13 +55,17 @@ newKeyframe(float duration, enum easingFunction easingFunc){
         newScene();
     }
 
+
     struct scene *s = getLast(g_presentation -> scenes);
     if (!s -> keyframes) s -> keyframes = k;
     else {
+        popTable();
         struct keyframe *t = s -> keyframes;
         t = getLast(t);
         t -> next = k;
     }
+
+    pushTable();
 }
 
 struct event*

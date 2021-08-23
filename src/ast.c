@@ -239,6 +239,14 @@ astRst(void *tl) {
     return (struct ast*) a;
 }
 
+struct ast*
+astPrn(struct ast* l){
+    struct _ast_one *a = malloc(sizeof(struct _ast_one));
+    a -> t = AST_PRN;
+    a -> a = l;
+    return (struct ast*) a;
+}
+
 static struct primitive*
 evalPrim(struct _ast_prim *a) {
     struct primitive *p = newPrimitive(a -> pt);
@@ -779,6 +787,9 @@ eval(struct ast *a) {
             } else {
                 clearSym();
             }
+            break;
+        case AST_PRN:
+            printf("%g\n", eval(((struct _ast_one*) a) -> a).d);
             break;
 
         default:
