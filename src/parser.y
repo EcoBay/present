@@ -3,22 +3,26 @@
 #include "present.h"
 #include "symtable.h"
 #include <math.h>
+
+struct _text_list {
+    struct _text_list *next;
+    char *s;
+};
 %}
 
 %union {
     struct ast *a;
     char *s;
-    struct primitive *p;
     int i;
     float d;
-    struct color *c;
+    struct _text_list *tl;
 }
 
 /* primitives */
 %token BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE MOVE
 
 /* keywords */
-%token FOR OF HERE AND BETWEEN DEFINE
+%token FOR OF HERE AND BETWEEN DEFINE RESET
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -58,8 +62,9 @@ u
 %type <a> program statement element present
 %type <a> keyframe_stmt direction_stmt
 %type <a> primitive expr duration color position place
-%type <a> position_not_place expr_pair
+%type <a> position_not_place expr_pair reset
 %type <i> positioning easing corner optional_corner
+%type <tl> iden_list
 
 %left TEXT
 %left LJUST RJUST ABOVE BELOW
@@ -104,6 +109,7 @@ element: primitive
                 $$ = astAsgn($1, SYM_EVENT, a);
 
                 union T t = {.d = 0};
+                resetSym($1);
                 setSym($1, SYM_EVENT, t);
             }
        | IDENTIFIER '=' expr
@@ -111,6 +117,7 @@ element: primitive
                 $$ = astAsgn($1, SYM_DOUBLE, $3);
 
                 union T t = {.d = 0};
+                resetSym($1);
                 setSym($1, SYM_DOUBLE, t);
             }
        | direction_stmt
@@ -120,6 +127,7 @@ element: primitive
                 union T v = {.s = $3};
                 setSym($2, SYM_MACRO, v);
             }
+        | reset
 ;
 
 present: keyframe_stmt                      { $$ = $1; }
@@ -482,6 +490,36 @@ position_not_place: expr_pair
                         free($4);
                         free($6);
                     }
+;
+
+reset: RESET            { $$ = astRst(NULL); }
+     | RESET iden_list  { $$ = astRst($2); }
+;
+
+iden_list: IDENTIFIER
+            {
+                $$ = malloc(sizeof(struct _text_list));
+                $$ -> next = NULL;
+                $$ -> s = $1;
+            }
+         | LABEL
+            {
+                $$ = malloc(sizeof(struct _text_list));
+                $$ -> next = NULL;
+                $$ -> s = $1;
+            }
+         | iden_list IDENTIFIER
+            {
+                $$ = malloc(sizeof(struct _text_list));
+                $$ -> next = $1;
+                $$ -> s = $2;
+            }
+         | iden_list LABEL
+            {
+                $$ = malloc(sizeof(struct _text_list));
+                $$ -> next = $1;
+                $$ -> s = $2;
+            }
 ;
 
 expr_pair: expr ',' expr        { $$ = astOp(0, $1, $3); }

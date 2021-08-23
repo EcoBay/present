@@ -27,6 +27,16 @@ struct _ast_asgn {
     struct ast *a;
 };
 
+struct _text_list {
+    struct _text_list *next;
+    char *s;
+};
+
+struct _ast_rst {
+    int t;
+    struct _text_list *tl;
+}; 
+
 struct _ast_tl {
     int t;
     struct ast* l;
@@ -218,6 +228,14 @@ astAsgn(char *sym, enum symType T, struct ast* val) {
     a -> sym = sym;
     a -> varT = T;
     a -> a = val;
+    return (struct ast*) a;
+}
+
+struct ast*
+astRst(void *tl) {
+    struct _ast_rst *a = malloc(sizeof(struct _ast_rst));
+    a -> t = AST_RST;
+    a -> tl = tl;
     return (struct ast*) a;
 }
 
@@ -748,6 +766,18 @@ eval(struct ast *a) {
             } else {
                 v.e = eval(t_asgn -> a).e;
                 setSym(t_asgn -> sym, SYM_EVENT, v);
+            }
+            break;
+        case AST_RST:
+            struct _ast_rst *t_rst = (struct _ast_rst*) a;
+            if (t_rst -> tl) {
+                struct _text_list *tl = t_rst -> tl;
+                while (tl) {
+                    resetSym(tl -> s);
+                    tl = tl -> next;
+                }
+            } else {
+                clearSym();
             }
             break;
 

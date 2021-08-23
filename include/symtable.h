@@ -31,11 +31,13 @@ struct symTable {
 };
 
 struct symbol* lookup(char*);
-void setSym(char *, enum symType, union T);
-int resetSym(char *);
+void setSym(char*, enum symType, union T);
+int resetSym(char*);
+void clearSym();
 
 void pushTable();
 struct symTable* popTable();
+void freeTable(struct symTable*);
 
 #define GET_FLOAT_SYM(Y, X) Y = lookup(X);                                      \
     if (!Y) {                                                                   \

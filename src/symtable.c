@@ -39,7 +39,7 @@ setSym(char *sym, enum symType t, union T val) {
     if (s) {
         if (s -> t != t) {
             fprintf(stderr, "Error: Variable \"%s\" is already"
-                    "defined under different type\n", t);
+                    "defined under different type\n", sym);
             abort();
         }
         s -> val = val;
@@ -59,6 +59,8 @@ resetSym(char *sym) {
     unsigned h = hash(sym) & HASH_MOD;
 
     struct symbol *s0 = g_symtable -> table[h];
+    if (!s0) return 1;
+
     struct symbol *s1 = s0 -> next;
 
     if (strcmp(s0 -> sym, sym) == 0) {
@@ -79,6 +81,22 @@ resetSym(char *sym) {
 }
 
 void
+clearSym() {
+    for (int i = 0; i < HASH_SIZE; i++) {
+        struct symbol *s = g_symtable -> table[i];
+        while (s) {
+            struct symbol *t = s;
+            s = s -> next;
+            if (t -> t == SYM_MACRO) {
+                free(t -> val.s);
+            }
+            free(t -> sym);
+            free(t);
+        }
+    }
+}
+
+void
 pushTable() {
     struct symTable *s;
     s = malloc(sizeof(struct symTable));
@@ -96,4 +114,21 @@ popTable() {
     struct symTable *s = g_symtable;
     g_symtable = g_symtable -> next;
     return s;
+}
+
+void
+freeTable(struct symTable *tb) {
+    for (int i = 0; i < HASH_SIZE; i++) {
+        struct symbol *s = tb -> table[i];
+        while (s) {
+            struct symbol *t = s;
+            s = s -> next;
+            if (t -> t == SYM_MACRO) {
+                free(t -> val.s);
+            }
+            free(t -> sym);
+            free(t);
+        }
+    }
+    free(tb);
 }

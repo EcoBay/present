@@ -7,7 +7,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#define yyterminate() popTable(); return YY_NULL
+#define yyterminate() freeTable(popTable()); return YY_NULL
+#define YY_NO_INPUT
+#define YY_NO_UNPUT
+
 int G_ARGCTR;
 char *G_IDEN;
 char *G_ARGS[10];
@@ -36,6 +39,7 @@ void expand_macro();
 "and"       { return AND; }
 "between"   { return BETWEEN; }
 "define"    { return DEFINE; }
+"reset"     { return RESET; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
@@ -140,7 +144,7 @@ void expand_macro();
                 }
             }
 
-/* TODO: Allow for balanced parenthesis */
+    /* TODO: Allow for balanced parenthesis */
 <MACRO_CALL>"("         {
                 for (int i = 0; i < 10; i++) {
                     G_ARGS[i] = "";
@@ -186,16 +190,6 @@ void expand_macro();
             }
 
 
-<MACRO_ARG_0>.          |
-<MACRO_ARG_1>.          |
-<MACRO_CALL>.           {
-                yyerror(
-                    "Unexpected character %c at line no. %d\n",
-                    *yytext, yylineno
-                );
-                abort();
-            }
-
 ([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
                 yylval.d = strtof(yytext, NULL);
                 return NUMBER;
@@ -223,6 +217,7 @@ void expand_macro();
             }
 
 "\\#".*
+"#".*
 [ \t]
 \n          { return EOL; }
 ";"         |

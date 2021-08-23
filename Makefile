@@ -18,7 +18,7 @@ parser: $(SDIR)/parser.y
 	bison $(BISONFLAGS) -d --output=$(SDIR)/present.tab.c $(SDIR)/parser.y
 
 lexer: $(SDIR)/lexer.l $(SDIR)/present.tab.c $(SDIR)/present.tab.h
-	flex $(FLEXFlAGS) --outfile=$(SDIR)/present.lex.c $(SDIR)/lexer.l 
+	flex $(FLEXFLAGS) --outfile=$(SDIR)/present.lex.c $(SDIR)/lexer.l 
 
 $(OBJ): $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) ${MYCFLAGS}

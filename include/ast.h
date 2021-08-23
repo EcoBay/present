@@ -26,6 +26,7 @@ enum nodetype {
     AST_DIR,
     AST_KF,
     AST_ASGN,
+    AST_RST,
     AST_LBL,
 
     /* expressions */
@@ -100,5 +101,6 @@ struct ast* astInt(int i);
 struct ast* astRef(char*);
 struct ast* astLbl(char*);
 struct ast* astAsgn(char*, enum symType, struct ast*);
+struct ast* astRst(void*);
 
 #endif
