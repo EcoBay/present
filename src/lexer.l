@@ -21,6 +21,7 @@ void expand_macro();
 
 %option yylineno nodefault noyywrap
 %x MACRO_CALL MACRO_ARG_0 MACRO_ARG_1
+%s MACRO_DEF
 
 %%
 
@@ -38,7 +39,7 @@ void expand_macro();
 "here"      { return HERE; }
 "and"       { return AND; }
 "between"   { return BETWEEN; }
-"define"    { return DEFINE; }
+"define"    { BEGIN MACRO_DEF; return DEFINE; }
 "reset"     { return RESET; }
 "print"     { return PRINT; }
 
@@ -190,17 +191,17 @@ void expand_macro();
                 abort();
             }
 
-
 ([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
                 yylval.d = strtof(yytext, NULL);
                 return NUMBER;
             }
-"X"[^X]*"X"     |
-"%"[^%]*"%"     |
-"["[^\]]*"]"    |
-"{"[^}]*"}"     {
+<MACRO_DEF>"X"[^X]*"X"      |
+<MACRO_DEF>"%"[^%]*"%"      |
+<MACRO_DEF>"["[^\]]*"]"     |
+<MACRO_DEF>"{"[^}]*"}"      {
                 yytext[yyleng - 1] = '\0';
                 yylval.s = strdup(yytext + 1);
+                BEGIN INITIAL;
                 return TEMPLATE;
             }
 \"([^\\\"]|\\.)*\"  {
@@ -231,11 +232,21 @@ void expand_macro();
 "^"         |
 "("         |
 ")"         |
-"["         |
-"]"         |
 "="         |
 ":"         |
 ","         { return *yytext; }
+
+"["         |
+"{"         {
+                pushTable();
+                return *yytext;
+            }
+
+"]"         |
+"}"         {
+                freeTable(popTable());
+                return *yytext;
+            }
 
 <<EOF>>     {
                 yypop_buffer_state();
@@ -243,7 +254,18 @@ void expand_macro();
                     yyterminate();
                 }
             }
-.           {
+
+<MACRO_ARG_0>.  |
+<MACRO_ARG_1>.  |
+<MACRO_CALL>.   {
+                yyerror(
+                    "Macro should be followed by \"(\" but "
+                    "receive %c instead at line no. %d\n",
+                    *yytext, yylineno
+                );
+                abort();
+}
+.   {
                 yyerror(
                     "Unexpected character %c at line no. %d\n",
                     *yytext, yylineno

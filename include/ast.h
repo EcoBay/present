@@ -3,6 +3,7 @@
 
 #include "object.h"
 #include "symtable.h"
+#include <stdarg.h>
 
 union ast_type {
     char *s;
@@ -16,6 +17,7 @@ union ast_type {
 
 enum nodetype {
     AST_STMT = 256,
+    AST_GRP,
     AST_PRIM,
     AST_ATTR,
     AST_TL,
@@ -82,13 +84,14 @@ struct ast {
     struct ast *r;
 };
 
-union ast_type eval(struct ast*);
+union ast_type eval(struct ast*, ...);
 void freetree(struct ast*);
 
 struct ast* astStmt(struct ast*, struct ast*);
+struct ast* astGrp(struct ast*);
 struct ast* astPrim(enum primitiveType);
 struct ast* astAttr(struct ast*, enum attrib, struct ast*);
-struct ast* astTL(struct ast*, struct ast*, int);
+struct ast* astTL(struct ast*, int);
 struct ast* astRGBA(struct ast*, struct ast*, struct ast*, struct ast*);
 struct ast* astText(char *s);
 struct ast* astDraw(struct ast*);

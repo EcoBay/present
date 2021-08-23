@@ -39,7 +39,6 @@ struct _ast_rst {
 
 struct _ast_tl {
     int t;
-    struct ast* l;
     struct ast* s;
     int p;
 };
@@ -58,11 +57,6 @@ struct _ast_kf {
     int easingFunc;
 };
 
-struct _ast_one {
-    int t;
-    struct ast *a;
-};
-
 struct _ast_term {
     int t;
     union ast_type val;
@@ -74,6 +68,15 @@ astStmt(struct ast *l, struct ast *r) {
     a -> t = AST_STMT;
     a -> l = l;
     a -> r = r;
+    return a;
+}
+
+struct ast*
+astGrp(struct ast *l) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = AST_GRP;
+    a -> l = l;
+    a -> r = NULL;
     return a;
 }
 
@@ -96,10 +99,9 @@ astAttr(struct ast *p, enum attrib attr, struct ast *val) {
 }
 
 struct ast*
-astTL(struct ast *l, struct ast *s, int p) {
+astTL(struct ast *s, int p) {
     struct _ast_tl *a = malloc(sizeof(struct _ast_tl));
     a -> t = AST_TL;
-    a -> l = l;
     a -> s = s;
     a -> p = p;
     return (struct ast*) a;
@@ -126,9 +128,10 @@ astText(char *s){
 
 struct ast*
 astDraw(struct ast *l) {
-    struct _ast_one *a = malloc(sizeof(struct _ast_one));
+    struct ast *a = malloc(sizeof(struct ast));
     a -> t = AST_DRAW;
-    a -> a = l;
+    a -> l = l;
+    a -> r = NULL;
     return (struct ast*) a;
 }
 
@@ -241,9 +244,10 @@ astRst(void *tl) {
 
 struct ast*
 astPrn(struct ast* l){
-    struct _ast_one *a = malloc(sizeof(struct _ast_one));
+    struct ast *a = malloc(sizeof(struct ast));
     a -> t = AST_PRN;
-    a -> a = l;
+    a -> l = l;
+    a -> r = NULL;
     return (struct ast*) a;
 }
 
@@ -318,7 +322,7 @@ evalAttr(struct _ast_attr *a) {
 
     switch (a -> attr) {
         case ATTR_TXT:
-            p -> txt = eval(a -> val).tl;
+            p -> txt = eval(a -> val, p -> txt).tl;
             break;
         case ATTR_UP:
             if (p -> t > 3 && p -> t < 8) {
@@ -543,10 +547,13 @@ evalAttr(struct _ast_attr *a) {
 }
 
 union ast_type
-eval(struct ast *a) {
+eval(struct ast *a, ...) {
     if (!a) return (union ast_type) {.i = 0};
     union ast_type ret;
     struct symbol *s;
+
+    va_list args;
+    va_start(args, a);
 
     switch (a -> t) {
         /* expresions */
@@ -702,6 +709,18 @@ eval(struct ast *a) {
             eval(a -> l);
             eval(a -> r);
             break;
+        case AST_GRP:
+            struct vec2d c;
+            getCursor(&c);
+            int dir = getDirection();
+            pushTable();
+
+            eval(a -> l);
+
+            freeTable(popTable());
+            setDirection(dir);
+            setCursor(&c);
+            break;
         case AST_PRIM:
             ret.p = evalPrim( (struct _ast_prim*) a );
             break;
@@ -719,11 +738,7 @@ eval(struct ast *a) {
             }
 
             RsvgHandle *h = getSVGHandler(id);
-            if (t_tl -> l) {
-                ret.tl = addTextList(h, t_tl -> p, eval(t_tl -> l).tl);
-            } else {
-                ret.tl = addTextList(h, t_tl -> p, NULL);
-            }
+            ret.tl = addTextList(h, t_tl -> p, va_arg(args, struct textList*));
 
             free(id);
             free(str);
@@ -743,9 +758,7 @@ eval(struct ast *a) {
             ret.i = ((struct _ast_term*) a) -> val.i;
             break;
         case AST_DRAW:
-            struct primitive *p = eval(
-                ((struct _ast_one*) a ) -> a
-            ).p;
+            struct primitive *p = eval(a -> l).p;
             preparePrimitive(p);
             ret.e = newDrawEvent(p);
             break;
@@ -789,7 +802,7 @@ eval(struct ast *a) {
             }
             break;
         case AST_PRN:
-            printf("%g\n", eval(((struct _ast_one*) a) -> a).d);
+            printf("%g\n", eval(a -> l).d);
             break;
 
         default:
@@ -797,6 +810,8 @@ eval(struct ast *a) {
             abort();
             break;
     }
+
+    va_end(args);
 
     return ret;
 }

@@ -107,7 +107,7 @@ newPrimitive(enum primitiveType t){
     p -> rad = 0.25;
     p -> segments = NULL;
     p -> at = NULL;
-    p -> with = 0;
+    p -> with = (t == PRIM_TEXT_LIST) ? 12 : 0;
     p -> spacing = 0;
     p -> chop1 = 0;
     p -> chop2 = 0;

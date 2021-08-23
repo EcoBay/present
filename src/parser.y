@@ -60,7 +60,7 @@ u
 %token EOL
 
 %type <a> program statement element present
-%type <a> keyframe_stmt direction_stmt
+%type <a> keyframe_stmt direction_stmt element_list
 %type <a> primitive expr duration color position place
 %type <a> position_not_place expr_pair reset
 %type <i> positioning easing corner optional_corner
@@ -129,9 +129,17 @@ element: primitive
             }
         | reset
         | PRINT expr
-            {
-                $$ = astPrn($2);
-            }
+            { $$ = astPrn($2); }
+        | '{' element_list '}'
+            { $$ = astGrp($2); }
+;
+
+element_list: %empty                    { $$ = NULL; }
+            | element                   { $$ = astStmt($1, NULL); }
+            | element_list EOL element  { $$ = astStmt($1, $3); }
+            | element_list ';' element  { $$ = astStmt($1, $3); }
+            | element_list EOL          { $$ = astStmt($1, NULL); }
+            | element_list ';'          { $$ = astStmt($1, NULL); }
 ;
 
 present: keyframe_stmt                      { $$ = $1; }
@@ -185,7 +193,7 @@ primitive: BOX
          | TEXT positioning
             {
                 struct ast *t = astPrim(PRIM_TEXT_LIST);
-                $$ = astAttr(t, ATTR_TXT, astTL(NULL, astText($1), $2));
+                $$ = astAttr(t, ATTR_TXT, astTL(astText($1), $2));
             }
          | primitive UP
             { $$ = astAttr($1, ATTR_UP, NULL); }
@@ -251,7 +259,7 @@ primitive: BOX
          | primitive FILL color
             { $$ = astAttr($1, ATTR_FILL, $3); }
          | primitive TEXT positioning
-            { $$ = astAttr($1, ATTR_TXT, astTL(NULL, astText($2), $3)); }
+            { $$ = astAttr($1, ATTR_TXT, astTL(astText($2), $3)); }
          | primitive HT expr
             { $$ = astAttr($1, ATTR_HT, $3); }
          | primitive WID expr
