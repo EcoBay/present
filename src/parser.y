@@ -22,7 +22,7 @@ struct _text_list {
 %token BOX CIRCLE ELLIPSE ARC LINE ARROW SPLINE MOVE
 
 /* keywords */
-%token FOR OF HERE AND BETWEEN DEFINE RESET
+%token FOR OF HERE AND BETWEEN DEFINE RESET PRINT
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -128,6 +128,11 @@ element: primitive
                 setSym($2, SYM_MACRO, v);
             }
         | reset
+        | PRINT expr
+            {
+                printf("%g\n", eval($2).d);
+                $$ = NULL;
+            }
 ;
 
 present: keyframe_stmt                      { $$ = $1; }

@@ -40,6 +40,7 @@ void expand_macro();
 "between"   { return BETWEEN; }
 "define"    { return DEFINE; }
 "reset"     { return RESET; }
+"print"     { return PRINT; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
