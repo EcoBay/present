@@ -336,6 +336,21 @@ translatePrimitive(struct primitive *p) {
         l -> y += trl.y;
         l = l -> next;
     }
+
+    struct event *e = p -> child;
+    while (e) {
+        struct primitive *t = e -> a.pr;
+        if (!t -> at) {
+            t -> at = malloc(sizeof(struct vec2d));
+        }
+
+        t -> at -> x = t -> start.x + trl.x;
+        t -> at -> y = t -> start.y + trl.y;
+        t -> with = 12;
+        translatePrimitive(t);
+
+        e = e -> next;
+    }
 }
 
 void
@@ -535,7 +550,7 @@ preparePrimitive(struct primitive *p){
             e = p -> child;
             for(int i = 0; e; e = e -> next, i++) {
                 ps[i * 2] = e -> a.pr -> nw;
-                ps[i * 2] = e -> a.pr -> se;
+                ps[i * 2 + 1] = e -> a.pr -> se;
                 p -> end = e -> a.pr -> end;
             }
 
