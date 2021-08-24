@@ -31,6 +31,7 @@ struct symTable {
 };
 
 struct symbol* lookup(char*);
+struct symbol* lookup_0(char*);
 void setSym(char*, enum symType, union T);
 int resetSym(char*);
 void clearSym();

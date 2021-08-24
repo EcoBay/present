@@ -6,6 +6,7 @@
 #include <cairo.h>
 
 extern struct presentation *g_presentation;
+extern struct primitive *g_parent;
 
 enum primitiveType {
     PRIM_BOX,
@@ -16,7 +17,8 @@ enum primitiveType {
     PRIM_ARROW,
     PRIM_SPLINE,
     PRIM_MOVE,
-    PRIM_TEXT_LIST
+    PRIM_TEXT_LIST,
+    PRIM_BLOCK,
 };
 
 enum easingFunction {
@@ -86,6 +88,10 @@ struct primitive {
      */
     struct color *fill;
     struct textList *txt;
+
+    /* block primitive */
+    struct symTable *tb;
+    struct event *child;
 
     /* draw states */
     float ps;

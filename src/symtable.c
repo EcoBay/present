@@ -26,6 +26,19 @@ lookup(char *sym) {
     return NULL;
 }
 
+struct symbol*
+lookup_0(char *sym) {
+    struct symbol *s;
+    unsigned h = hash(sym) & HASH_MOD;
+
+    struct symTable *st = g_symtable;
+    for (s = st -> table[h]; s; s = s -> next) {
+        if (strcmp(s -> sym, sym) == 0) return s;
+    }
+
+    return NULL;
+}
+
 void
 setSym(char *sym, enum symType t, union T val) {
     unsigned h = hash(sym) & HASH_MOD;

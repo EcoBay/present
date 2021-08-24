@@ -133,7 +133,7 @@ void expand_macro();
 
 [a-zA-Z_][a-zA-Z0-9_]* {
                 struct symbol *s;
-                s = lookup(yytext);
+                s = lookup_0(yytext);
                 if (!s || s -> t == SYM_DOUBLE) {
                     yylval.s = strdup(yytext);
                     return IDENTIFIER;

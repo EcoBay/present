@@ -51,6 +51,7 @@ enum nodetype {
 
 enum attrib{
     ATTR_TXT,
+    ATTR_CH,
     ATTR_UP,
     ATTR_RIGHT,
     ATTR_DOWN,

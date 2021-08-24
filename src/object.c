@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct presentation *g_presentation;
+struct presentation *g_presentation = NULL;
+struct primitive *g_parent = NULL;
 
 void*
 getLast(void *i){
@@ -73,25 +74,36 @@ newDrawEvent(struct primitive *p){
     struct scene *s = g_presentation -> scenes;
     s = getLast(s);
 
-    if (!s -> keyframes) {
-        fprintf(stderr, "Warning: adding default keyframe before "
-                "line no. %d\n", yylineno - 1);
-        newKeyframe(1.0, EASE_LINEAR);
-    }
-
-    struct keyframe *k = getLast(s -> keyframes);
-
     struct event *e = malloc(sizeof(struct event));
     e -> next = NULL;
     e -> eventType = 0;
     e -> a.pr = p;
 
-    if (!k -> events) {
-        k -> events = e;
+    if (g_parent) {
+
+        struct event *c = getLast(g_parent -> child);
+        if (!c) {
+            g_parent -> child = e;
+        } else {
+            c -> next = e;
+        }
+
     } else {
-        struct event *t = k -> events;
-        t = getLast(t);
-        t -> next = e;
+
+        if (!s -> keyframes) {
+            fprintf(stderr, "Warning: adding default keyframe before "
+                    "line no. %d\n", yylineno - 1);
+            newKeyframe(1.0, EASE_LINEAR);
+        }
+
+        struct keyframe *k = getLast(s -> keyframes);
+        if (!k -> events) {
+            k -> events = e;
+        } else {
+            struct event *t = k -> events;
+            t = getLast(t);
+            t -> next = e;
+        }
     }
 
     return e;
@@ -115,6 +127,9 @@ newPrimitive(enum primitiveType t){
     p -> flags = 0;
     p -> fill = NULL;
     p -> txt = NULL;
+
+    p -> tb = NULL;
+    p -> child = NULL;
 
     struct symbol *s;
     GET_FLOAT_SYM(s, "ps");
@@ -511,10 +526,24 @@ preparePrimitive(struct primitive *p){
             prepareTextList(p -> txt, &p -> start, &ps, &count);
             p -> end = p -> start;
             break;
+        case PRIM_BLOCK:
+            count = 0;
+            struct event *e = p -> child;
+            for(; e; e = e -> next, count+=2);
+            ps = malloc(count * sizeof(struct vec2d));
+
+            e = p -> child;
+            for(int i = 0; e; e = e -> next, i++) {
+                ps[i * 2] = e -> a.pr -> nw;
+                ps[i * 2] = e -> a.pr -> se;
+                p -> end = e -> a.pr -> end;
+            }
+
+            break;
     }
 
     updateBoundingBox(p, ps, count);
-    if (p -> t < PRIM_TEXT_LIST) {
+    if (p -> t < PRIM_TEXT_LIST || p -> t == PRIM_BLOCK) {
         prepareTextList(p -> txt, &p -> c, NULL, NULL);
     }
 

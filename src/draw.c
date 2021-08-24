@@ -260,6 +260,12 @@ renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
             drawLine(cr, p); break;
         case PRIM_SPLINE:
             drawSpline(cr, p); break;
+        case PRIM_BLOCK:
+            struct event *e = p -> child;
+            for (; e; e = e -> next) {
+                renderDrawEvent(surface, cr, e);
+            }
+            break;
     }
     drawTextList(cr, p -> txt);
 }

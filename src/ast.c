@@ -307,6 +307,7 @@ evalPrim(struct _ast_prim *a) {
             }
             p -> expr = s -> val.d;
             break;
+        case PRIM_BLOCK: break;
         case PRIM_TEXT_LIST: break;
     }
 
@@ -324,6 +325,14 @@ evalAttr(struct _ast_attr *a) {
         case ATTR_TXT:
             p -> txt = eval(a -> val, p -> txt).tl;
             break;
+        case ATTR_CH:
+            pushTable();
+            g_parent = p;
+            eval(a -> val);
+            p -> tb = popTable();
+            g_parent = NULL;
+            break;
+
         case ATTR_UP:
             if (p -> t > 3 && p -> t < 8) {
                 struct location *l;

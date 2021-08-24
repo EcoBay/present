@@ -195,6 +195,11 @@ primitive: BOX
                 struct ast *t = astPrim(PRIM_TEXT_LIST);
                 $$ = astAttr(t, ATTR_TXT, astTL(astText($1), $2));
             }
+         | '[' element_list ']'
+            {
+                struct ast *t = astPrim(PRIM_BLOCK);
+                $$ = astAttr(t, ATTR_CH, $2);
+            }
          | primitive UP
             { $$ = astAttr($1, ATTR_UP, NULL); }
          | primitive UP expr
