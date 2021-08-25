@@ -47,11 +47,11 @@ static void catchErr(int signo) {
 }
 
 int main(int argc, char **argv){
-    struct sigaction sa;
-    sa.sa_handler = catchErr;
+    // struct sigaction sa;
+    // sa.sa_handler = catchErr;
 
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGINT, &sa,  NULL);
+    // sigaction(SIGABRT, &sa, NULL);
+    // sigaction(SIGINT, &sa,  NULL);
 
     pushTable();
     int c = sizeof(builtIn) / sizeof(builtIn[0]);
@@ -63,6 +63,8 @@ int main(int argc, char **argv){
     initPresentation();
     pushTable();        // For macro and type checking during parsing and lexing
     while (yyparse());
+    while (popTable());
+
     renderPresentation();
     return 0;
 }

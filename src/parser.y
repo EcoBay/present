@@ -89,7 +89,10 @@ u
 %right '^'
 
 %%
-root: program                       { eval($1); }
+root: program                       {
+                                        eval($1);
+                                        freeTree($1);
+                                    }
 
 program: statement                  { $$ = astStmt($1, NULL); }
        | program EOL statement      { $$ = astStmt($1, $3); }

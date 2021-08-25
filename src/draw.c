@@ -294,6 +294,7 @@ renderPresentation(){
         fprintf(stderr, "Error: cannot open ffmpeg instance\n");
         abort();
     }
+    free(ffmpeg_cmd);
 
     cairo_surface_t *surface = cairo_image_surface_create(
             CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT);
@@ -326,6 +327,9 @@ renderPresentation(){
         }
     }
 
+    free(tempBuf);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
     pclose(ffmpeg);
     cleanTexDir();
 };

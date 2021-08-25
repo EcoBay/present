@@ -86,7 +86,7 @@ struct ast {
 };
 
 union ast_type eval(struct ast*, ...);
-void freetree(struct ast*);
+void freeTree(struct ast*);
 
 struct ast* astStmt(struct ast*, struct ast*);
 struct ast* astGrp(struct ast*);

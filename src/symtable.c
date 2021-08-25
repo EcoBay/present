@@ -124,6 +124,7 @@ pushTable() {
 
 struct symTable*
 popTable() {
+    if (!g_symtable) return NULL;
     struct symTable *s = g_symtable;
     g_symtable = g_symtable -> next;
     return s;

@@ -824,3 +824,81 @@ eval(struct ast *a, ...) {
 
     return ret;
 }
+
+void freeTree (struct ast* a) {
+    if (!a) return;
+
+    switch (a -> t) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '%':
+        case '^':
+        case '!':
+        case AST_UNM:
+        case AST_SIN:
+        case AST_COS:
+        case AST_ATAN2:
+        case AST_LOG:
+        case AST_EXP:
+        case AST_SQRT:
+        case AST_MAX:
+        case AST_MIN:
+        case AST_INT:
+        case AST_RAND:
+        case AST_ABS:
+        case AST_STMT:
+        case AST_GRP:
+        case AST_DRAW:
+        case AST_PRN:
+            freeTree(a -> l);
+            freeTree(a -> r);
+            break;
+
+        case AST_DIR:
+        case AST_LBL:
+        case AST_NUM:
+        case AST_REF:
+        case AST_TEXT:
+        case AST_INTL:
+        case AST_RST:
+        case AST_PRIM:
+            break;
+
+        case AST_KF:
+            struct _ast_kf *t_kf = (struct _ast_kf*) a;
+            freeTree(t_kf -> duration);
+            break;
+        case AST_ASGN:
+            struct _ast_asgn *t_asgn = (struct _ast_asgn*) a;
+            freeTree(t_asgn -> a);
+            break;
+        case AST_ATTR:
+            struct _ast_attr *t_attr = (struct _ast_attr*) a;
+            freeTree(t_attr -> p);
+            freeTree(t_attr -> val);
+            break;
+        case AST_TL:
+            struct _ast_tl *t_tl = (struct _ast_tl*) a;
+            freeTree(t_tl -> s);
+            break;
+        case AST_RGBA:
+            struct _ast_rgba *t_rgba = (struct _ast_rgba*) a;
+            freeTree(t_rgba -> r);
+            freeTree(t_rgba -> g);
+            freeTree(t_rgba -> b);
+            freeTree(t_rgba -> a);
+            break;
+
+        default:
+            yyerror("Internal error unknown AST type %d\n", a -> t);
+            abort();
+            break;
+    }
+}
