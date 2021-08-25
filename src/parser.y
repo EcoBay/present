@@ -484,7 +484,7 @@ position_not_place: expr_pair
                         free($4);
                         free($6);
                     }
-                  | expr '[' position ',' position ']'
+                  | expr '<' position ',' position '>'
                     {
                         $$ = astOp(0, NULL, NULL);
                         $$ -> l = astOp('+',
@@ -501,7 +501,7 @@ position_not_place: expr_pair
                         free($3);
                         free($5);
                     }
-                  | '(' expr '[' position ',' position ']' ')'
+                  | '(' expr '<' position ',' position '>' ')'
                     {
                         $$ = astOp(0, NULL, NULL);
                         $$ -> l = astOp('+',
@@ -574,25 +574,20 @@ optional_corner: DOT_N      { $$ = 1; }
                | DOT_END    { $$ = 3; }
 ;
 
-corner: TOP             { $$ = 1; }
-      | BOT             { $$ = 2; }
+corner: TOP  %prec TEXT { $$ = 1; }
+      | BOT  %prec TEXT { $$ = 2; }
       | LEFT            { $$ = 8; }
       | RIGHT           { $$ = 4; }
       | START           { $$ = 12; }
       | END             { $$ = 3; }
-      | corner TOP
-        {
-            $$ = $1;
-            $$ &= ~3;
-            $$ |= 1;
-        }
-      | corner BOT
-        {
-            $$ = $1;
-            $$ &= ~3;
-            $$ |= 2;
-        }
-      | corner START    { $$ = 12; }
-      | corner END      { $$ = 3; }
+      | TOP LEFT        { $$ = 9; }
+      | TOP RIGHT       { $$ = 5; }
+      | BOT LEFT        { $$ = 10; }
+      | BOT RIGHT       { $$ = 6; }
+      | LEFT TOP        { $$ = 9; }
+      | RIGHT TOP       { $$ = 5; }
+      | LEFT BOT        { $$ = 10; }
+      | RIGHT BOT       { $$ = 6; }
+      | CENTER          { $$ = 0; }
 ;
 %%
