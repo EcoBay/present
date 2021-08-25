@@ -259,23 +259,23 @@ evalPrim(struct _ast_prim *a) {
 
     switch (a -> pt) {
         case PRIM_BOX:
-            GET_FLOAT_SYM(s , "boxht");
+            s = lookup("boxht");
             p -> ht = s -> val.d;
-            GET_FLOAT_SYM(s , "boxwid");
+            s = lookup("boxwid");
             p -> wid = s -> val.d;
             break;
         case PRIM_CIRCLE:
-            GET_FLOAT_SYM(s, "circlerad");
+            s = lookup("circlerad");
             p -> expr = s -> val.d;
             break;
         case PRIM_ELLIPSE:
-            GET_FLOAT_SYM(s, "ellipseht");
+            s = lookup("ellipseht");
             p -> ht = s -> val.d;
-            GET_FLOAT_SYM(s, "ellipsewid");
+            s = lookup("ellipsewid");
             p -> wid = s -> val.d;
             break;
         case PRIM_ARC:
-            GET_FLOAT_SYM(s, "arcrad");
+            s = lookup("arcrad");
             p -> expr = s -> val.d;
             break;
         case PRIM_ARROW:
@@ -285,11 +285,11 @@ evalPrim(struct _ast_prim *a) {
             switch (direction) {
                 case 0:
                 case 2:
-                    GET_FLOAT_SYM(s, "lineht");
+                    s = lookup("lineht");
                     break;
                 case 1:
                 case 3:
-                    GET_FLOAT_SYM(s, "linewid");
+                    s = lookup("linewid");
                     break;
             }
             p -> expr = s -> val.d;
@@ -298,11 +298,11 @@ evalPrim(struct _ast_prim *a) {
             switch (direction) {
                 case 0:
                 case 2:
-                    GET_FLOAT_SYM(s, "moveht");
+                    s = lookup("moveht");
                     break;
                 case 1:
                 case 3:
-                    GET_FLOAT_SYM(s, "movewid");
+                    s = lookup("movewid");
                     break;
             }
             p -> expr = s -> val.d;
@@ -342,9 +342,9 @@ evalAttr(struct _ast_attr *a) {
                     l -> y += eval(a -> val).d;
                 } else {
                     if (p -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "moveht");
+                        s = lookup("moveht");
                     } else {
-                        GET_FLOAT_SYM(s, "lineht");
+                        s = lookup("lineht");
                     }
                     l -> y += s -> val.d;
                 }
@@ -364,9 +364,9 @@ evalAttr(struct _ast_attr *a) {
                     l -> x += eval(a -> val).d;
                 } else {
                     if (p -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "movewid");
+                        s = lookup("movewid");
                     } else {
-                        GET_FLOAT_SYM(s, "linewid");
+                        s = lookup("linewid");
                     }
                     l -> x += s -> val.d;
                 }
@@ -386,9 +386,9 @@ evalAttr(struct _ast_attr *a) {
                     l -> y -= eval(a -> val).d;
                 } else {
                     if (p -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "moveht");
+                        s = lookup("moveht");
                     } else {
-                        GET_FLOAT_SYM(s, "lineht");
+                        s = lookup("lineht");
                     }
                     l -> y -= s -> val.d;
                 }
@@ -408,9 +408,9 @@ evalAttr(struct _ast_attr *a) {
                     l -> x -= eval(a -> val).d;
                 } else {
                     if (p -> t == PRIM_MOVE) {
-                        GET_FLOAT_SYM(s, "movewid");
+                        s = lookup("movewid");
                     } else {
-                        GET_FLOAT_SYM(s, "linewid");
+                        s = lookup("linewid");
                     }
                     l -> x -= s -> val.d;
                 }
@@ -604,7 +604,7 @@ eval(struct ast *a, ...) {
             ret.d = ((struct _ast_term*) a) -> val.d;
             break;
         case AST_REF:
-            GET_FLOAT_SYM(s, ((struct _ast_term*) a) -> val.s);
+            s = lookup(((struct _ast_term*) a) -> val.s);
             ret.d = s -> val.d;
             break;
         case '+':
@@ -737,7 +737,7 @@ eval(struct ast *a, ...) {
             ret.p = evalAttr( (struct _ast_attr*) a );
             break;
         case AST_TL:
-            GET_FLOAT_SYM(s, "ps");
+            s = lookup("ps");
             struct _ast_tl *t_tl = (struct _ast_tl*) a;
             char *str = eval(t_tl -> s).s;
             char *id = createTex(str, s -> val.d);
@@ -784,7 +784,7 @@ eval(struct ast *a, ...) {
             }
             break;
         case AST_LBL:
-            GET_EVENT_SYM(s, ((struct _ast_term*) a) -> val.s);
+            s = lookup(((struct _ast_term*) a) -> val.s);
             ret.e = s -> val.e;
             break;
         case AST_ASGN:

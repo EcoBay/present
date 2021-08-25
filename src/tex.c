@@ -42,7 +42,7 @@ createTex(char *s, int pt){
     fputs("\\begin{document}\n", texFD);
 
     struct symbol *sym;
-    GET_FLOAT_SYM(sym, "maxpswid");
+    sym = lookup("maxpswid");
     int maxWid = (int) sym -> val.d;
     int wid = MIN((int) (pt * 1.2), maxWid);
 

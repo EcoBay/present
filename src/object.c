@@ -132,13 +132,13 @@ newPrimitive(enum primitiveType t){
     p -> child = NULL;
 
     struct symbol *s;
-    GET_FLOAT_SYM(s, "ps");
+    s = lookup("ps");
     p -> ps = s -> val.d;
-    GET_FLOAT_SYM(s, "arrowht");
+    s = lookup("arrowht");
     p -> arrowht = s -> val.d;
-    GET_FLOAT_SYM(s, "arrowwid");
+    s = lookup("arrowwid");
     p -> arrowwid = s -> val.d;
-    GET_FLOAT_SYM(s, "arrowhead");
+    s = lookup("arrowhead");
     p -> arrowhead = (uint8_t) s -> val.d;
 
     return p;
@@ -237,7 +237,7 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t 
     for (struct textList *to = t; to; to = to -> next, c++);
 
     struct symbol *s;
-    GET_FLOAT_SYM(s, "vs");
+    s = lookup("vs");
     float ht = s -> val.d / DPI;
     float curY = o -> y + ht * (c-1) / 2;
 

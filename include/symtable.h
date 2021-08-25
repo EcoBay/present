@@ -40,24 +40,4 @@ void pushTable();
 struct symTable* popTable();
 void freeTable(struct symTable*);
 
-#define GET_FLOAT_SYM(Y, X) Y = lookup(X);                                      \
-    if (!Y) {                                                                   \
-        fprintf(stderr,"Error: \"%s\" variable used before assignment\n", X);   \
-        abort();                                                                \
-    }                                                                           \
-    if (Y -> t != SYM_DOUBLE) {                                                 \
-        fprintf(stderr,"Error: \"%s\" variable must be float\n", X);            \
-        abort();                                                                \
-    }
-
-#define GET_EVENT_SYM(Y, X) Y = lookup(X);                                      \
-    if (!Y) {                                                                   \
-        fprintf(stderr,"Error: \"%s\" variable used before assignment\n", X);   \
-        abort();                                                                \
-    }                                                                           \
-    if (Y -> t != SYM_EVENT) {                                                  \
-        fprintf(stderr,"Error: \"%s\" variable must be event\n", X);            \
-        abort();                                                                \
-    }
-
 #endif
