@@ -37,6 +37,7 @@ int resetSym(char*);
 void clearSym();
 
 void pushTable();
+struct symTable* switchTable(struct symTable *tb);
 struct symTable* popTable();
 void freeTable(struct symTable*);
 

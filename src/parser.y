@@ -67,7 +67,7 @@ u
 
 %token EOL
 
-%type <a> program statement element present
+%type <a> program statement element present label
 %type <a> keyframe_stmt direction_stmt element_list
 %type <a> primitive expr duration color position place
 %type <a> position_not_place expr_pair reset prim_labels
@@ -254,11 +254,11 @@ primitive: BOX
          | primitive CW
             { $$ = astAttr($1, ATTR_CW, NULL); }
          | primitive DASHED
-            { $$ = astAttr($1, ATTR_DASHED, NULL); }
+            { $$ = astAttr($1, ATTR_DASHED, astRef("dashwid")); }
          | primitive DASHED expr
             { $$ = astAttr($1, ATTR_DASHED, $3); }
          | primitive DOTTED
-            { $$ = astAttr($1, ATTR_DOTTED, NULL); }
+            { $$ = astAttr($1, ATTR_DOTTED, astRef("dashwid")); }
          | primitive DOTTED expr
             { $$ = astAttr($1, ATTR_DOTTED, $3); }
          | primitive SOLID
@@ -554,11 +554,15 @@ expr_pair: expr ',' expr        { $$ = astOp(0, $1, $3); }
          | '(' expr_pair ')'    { $$ = $2; }
 ;
 
-place: LABEL optional_corner    { $$ = astLoc($1, $2); }
-     | LABEL                    { $$ = astLoc($1, 15); }
-     | corner OF LABEL          { $$ = astLoc($3, $1); }
-     | optional_corner OF LABEL { $$ = astLoc($3, $1); }
+place: label optional_corner    { $$ = astLoc($1, $2); }
+     | label                    { $$ = astLoc($1, 15); }
+     | corner OF label          { $$ = astLoc($3, $1); }
+     | optional_corner OF label { $$ = astLoc($3, $1); }
      | HERE                     { $$ = astHere(); }
+;
+
+label: LABEL            { $$ = astLbl($1); }
+     | label '.' LABEL  { $$ = astTbl($1, astLbl($3)); }
 ;
 
 optional_corner: DOT_N      { $$ = 1; }

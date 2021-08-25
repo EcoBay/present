@@ -29,6 +29,7 @@ enum nodetype {
     AST_KF,
     AST_ASGN,
     AST_RST,
+    AST_TBL,
     AST_LBL,
     AST_PRN,
 
@@ -100,10 +101,11 @@ struct ast* astDir(int);
 struct ast* astKF(struct ast*, int);
 struct ast* astOp(int op, struct ast*, struct ast*);
 struct ast* astNum(float d);
-struct ast* astLoc(char *, int);
+struct ast* astLoc(struct ast*, int);
 struct ast* astHere();
 struct ast* astInt(int i);
 struct ast* astRef(char*);
+struct ast* astTbl(struct ast*, struct ast*);
 struct ast* astLbl(char*);
 struct ast* astAsgn(char*, enum symType, struct ast*);
 struct ast* astRst(void*);

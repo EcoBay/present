@@ -246,6 +246,7 @@ void expand_macro();
 "}"         |
 "="         |
 ":"         |
+"."         |
 ","         { return *yytext; }
 
 <<EOF>>     {

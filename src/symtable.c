@@ -123,6 +123,13 @@ pushTable() {
 }
 
 struct symTable*
+switchTable(struct symTable *tb) {
+    struct symTable *ret = g_symtable;
+    g_symtable = tb;
+    return ret;
+}
+
+struct symTable*
 popTable() {
     if (!g_symtable) return NULL;
     struct symTable *s = g_symtable;
@@ -146,3 +153,4 @@ freeTable(struct symTable *tb) {
     }
     free(tb);
 }
+

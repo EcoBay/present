@@ -132,7 +132,7 @@ astDraw(struct ast *l) {
     a -> t = AST_DRAW;
     a -> l = l;
     a -> r = NULL;
-    return (struct ast*) a;
+    return a;
 }
 
 struct ast*
@@ -170,21 +170,21 @@ astNum(float d) {
 }
 
 struct ast*
-astLoc(char *sym, int corner) {
+astLoc(struct ast* lbl, int corner) {
     struct ast *a = malloc(sizeof(struct ast));
     a -> t = 0;
 
     a -> l = malloc(sizeof(struct ast*));
     a -> l -> t = 1;
-    a -> l -> l = astLbl(sym);
+    a -> l -> l = lbl;
     a -> l -> r = astInt(corner);
 
     a -> r = malloc(sizeof(struct ast*));
     a -> r -> t = 2;
-    a -> r -> l = astLbl(sym);
+    a -> r -> l = lbl;
     a -> r -> r = astInt(corner);
 
-    return (struct ast*) a;
+    return a;
 }
 
 struct ast*
@@ -197,7 +197,7 @@ astHere() {
 
     a -> r = malloc(sizeof(struct ast*));
     a -> r -> t = 4;
-    return (struct ast*) a;
+    return a;
 }
 
 struct ast*
@@ -214,6 +214,16 @@ astRef(char *s) {
     a -> t = AST_REF; 
     a -> val.s = s;
     return (struct ast*) a;
+}
+
+struct ast*
+astTbl(struct ast *l, struct ast *r) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = AST_TBL;
+    a -> l = l;
+    a -> r = r;
+
+    return a;
 }
 
 struct ast*
@@ -783,6 +793,15 @@ eval(struct ast *a, ...) {
                 newKeyframe(1.0, t_kf -> easingFunc);
             }
             break;
+        case AST_TBL:
+            struct symTable *tb;
+            tb =  eval(a -> l).e -> a.pr -> tb;
+            tb = switchTable(tb);
+
+            ret.e = eval(a -> r).e;
+
+            switchTable(tb);
+            break;
         case AST_LBL:
             s = lookup(((struct _ast_term*) a) -> val.s);
             ret.e = s -> val.e;
@@ -815,7 +834,8 @@ eval(struct ast *a, ...) {
             break;
 
         default:
-            yyerror("Internal error unknown AST type %d\n", a -> t);
+            yyerror("Internal Error: cannot evaluate "
+                    "AST with type of %d\n", a -> t);
             abort();
             break;
     }
@@ -831,7 +851,6 @@ void freeTree (struct ast* a) {
     switch (a -> t) {
         case 0:
         case 1:
-        case 2:
         case 3:
         case 4:
         case '+':
@@ -857,10 +876,12 @@ void freeTree (struct ast* a) {
         case AST_GRP:
         case AST_DRAW:
         case AST_PRN:
+        case AST_TBL:
             freeTree(a -> l);
             freeTree(a -> r);
             break;
 
+        case 2:  // may be freed twice
         case AST_DIR:
         case AST_LBL:
         case AST_NUM:
@@ -897,7 +918,8 @@ void freeTree (struct ast* a) {
             break;
 
         default:
-            yyerror("Internal error unknown AST type %d\n", a -> t);
+            yyerror("Internal Error: cannot free "
+                    "AST with type of %d\n", a -> t);
             abort();
             break;
     }
