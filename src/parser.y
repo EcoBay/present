@@ -8,6 +8,14 @@ struct _text_list {
     struct _text_list *next;
     char *s;
 };
+
+struct _t {
+    int  t;
+    char *sym;
+    enum symType varT;
+    struct ast *a;
+};
+
 %}
 
 %union {
@@ -62,7 +70,7 @@ u
 %type <a> program statement element present
 %type <a> keyframe_stmt direction_stmt element_list
 %type <a> primitive expr duration color position place
-%type <a> position_not_place expr_pair reset
+%type <a> position_not_place expr_pair reset prim_labels
 %type <i> positioning easing corner optional_corner
 %type <tl> iden_list
 
@@ -106,35 +114,35 @@ statement: %empty                   { $$ = NULL; }
 
 element: primitive
             { $$ = astDraw($1); }
-       | IDENTIFIER ':' primitive
-            {
-                struct ast* a = astDraw($3);
-                $$ = astAsgn($1, SYM_EVENT, a);
-
-                union T t = {.d = 0};
-                resetSym($1);
-                setSym($1, SYM_EVENT, t);
-            }
+       | prim_labels
        | IDENTIFIER '=' expr
-            {
-                $$ = astAsgn($1, SYM_DOUBLE, $3);
-
-                union T t = {.d = 0};
-                resetSym($1);
-                setSym($1, SYM_DOUBLE, t);
-            }
+            { $$ = astAsgn($1, SYM_DOUBLE, $3); }
        | direction_stmt
+       | reset
+       | PRINT expr
+            { $$ = astPrn($2); }
+       | '{' element_list '}'
+            { $$ = astGrp($2); }
        | DEFINE IDENTIFIER TEMPLATE
             {
                 $$ = NULL;
                 union T v = {.s = $3};
                 setSym($2, SYM_MACRO, v);
             }
-        | reset
-        | PRINT expr
-            { $$ = astPrn($2); }
-        | '{' element_list '}'
-            { $$ = astGrp($2); }
+       | DEFINE LABEL TEMPLATE
+            {
+                $$ = NULL;
+                union T v = {.s = $3};
+                setSym($2, SYM_MACRO, v);
+            }
+;
+
+prim_labels: LABEL ':' primitive
+                { $$ = astAsgn($1, SYM_EVENT, astDraw($3)); }
+           | LABEL ':' EOL prim_labels
+                { $$ = astAsgn($1, SYM_EVENT, $4); }
+           | LABEL ':' prim_labels
+                { $$ = astAsgn($1, SYM_EVENT, $3); }
 ;
 
 element_list: %empty                    { $$ = NULL; }
@@ -547,7 +555,7 @@ expr_pair: expr ',' expr        { $$ = astOp(0, $1, $3); }
 ;
 
 place: LABEL optional_corner    { $$ = astLoc($1, $2); }
-     | LABEL                    { $$ = astLoc($1, 0); }
+     | LABEL                    { $$ = astLoc($1, 15); }
      | corner OF LABEL          { $$ = astLoc($3, $1); }
      | optional_corner OF LABEL { $$ = astLoc($3, $1); }
      | HERE                     { $$ = astHere(); }

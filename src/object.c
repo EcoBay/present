@@ -643,6 +643,13 @@ getLoc(struct primitive* p, struct vec2d* v, uint8_t corner) {
 
         case 3: (*v) = p -> end; break;
         case 12: (*v) = p -> start; break;
+        case 15:
+            if (p -> t > 2 && p -> t < 8) {
+                (*v) = p -> start;
+            } else {
+                (*v) = p -> c;
+            }
+            break;
     }
 }
 

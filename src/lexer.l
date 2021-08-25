@@ -131,13 +131,21 @@ void expand_macro();
 "m"         |
 "minute"s?  { return MINUTES; }
 
-[a-zA-Z_][a-zA-Z0-9_]* {
+[a-z][a-zA-Z0-9_]*  {
                 struct symbol *s;
-                s = lookup_0(yytext);
+                s = lookup(yytext);
                 if (!s || s -> t == SYM_DOUBLE) {
                     yylval.s = strdup(yytext);
                     return IDENTIFIER;
-                } else if (s -> t == SYM_EVENT) {
+                } else {
+                    G_IDEN = strdup(yytext);
+                    BEGIN MACRO_CALL;
+                }
+            }
+[A-Z][a-zA-Z0-9_]*  {
+                struct symbol *s;
+                s = lookup(yytext);
+                if (!s || s -> t == SYM_EVENT) {
                     yylval.s = strdup(yytext);
                     return LABEL;
                 } else {
@@ -232,21 +240,13 @@ void expand_macro();
 "^"         |
 "("         |
 ")"         |
+"["         |
+"]"         |
+"{"         |
+"}"         |
 "="         |
 ":"         |
 ","         { return *yytext; }
-
-"["         |
-"{"         {
-                pushTable();
-                return *yytext;
-            }
-
-"]"         |
-"}"         {
-                freeTable(popTable());
-                return *yytext;
-            }
 
 <<EOF>>     {
                 yypop_buffer_state();

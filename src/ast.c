@@ -791,10 +791,10 @@ eval(struct ast *a, ...) {
             struct _ast_asgn *t_asgn = (struct _ast_asgn*) a;
             union T v;
             if (t_asgn -> varT == SYM_DOUBLE) {
-                v.d = eval(t_asgn -> a).d;
+                ret.d = v.d = eval(t_asgn -> a).d;
                 setSym(t_asgn -> sym, SYM_DOUBLE, v);
             } else {
-                v.e = eval(t_asgn -> a).e;
+                ret.e = v.e = eval(t_asgn -> a).e;
                 setSym(t_asgn -> sym, SYM_EVENT, v);
             }
             break;
