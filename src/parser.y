@@ -16,6 +16,8 @@ struct _t {
     struct ast *a;
 };
 
+#define astRef_(a) astRef(strdup(a)) //astRef argument must not be a literal
+
 %}
 
 %union {
@@ -128,12 +130,14 @@ element: primitive
                 $$ = NULL;
                 union T v = {.s = $3};
                 setSym($2, SYM_MACRO, v);
+                free($2);
             }
        | DEFINE LABEL TEMPLATE
             {
                 $$ = NULL;
                 union T v = {.s = $3};
                 setSym($2, SYM_MACRO, v);
+                free($2);
             }
 ;
 
@@ -236,7 +240,7 @@ primitive: BOX
          | primitive THEN
             { $$ = astAttr($1, ATTR_THEN, NULL); }
          | primitive CHOP
-            { $$ = astAttr($1, ATTR_CHOP, astRef("circlerad")); }
+            { $$ = astAttr($1, ATTR_CHOP, NULL); }
          | primitive CHOP expr
             { $$ = astAttr($1, ATTR_CHOP, $3); }
          | primitive WITH optional_corner
@@ -254,11 +258,11 @@ primitive: BOX
          | primitive CW
             { $$ = astAttr($1, ATTR_CW, NULL); }
          | primitive DASHED
-            { $$ = astAttr($1, ATTR_DASHED, astRef("dashwid")); }
+            { $$ = astAttr($1, ATTR_DASHED, NULL); }
          | primitive DASHED expr
             { $$ = astAttr($1, ATTR_DASHED, $3); }
          | primitive DOTTED
-            { $$ = astAttr($1, ATTR_DOTTED, astRef("dashwid")); }
+            { $$ = astAttr($1, ATTR_DOTTED, NULL); }
          | primitive DOTTED expr
             { $$ = astAttr($1, ATTR_DOTTED, $3); }
          | primitive SOLID
@@ -269,7 +273,7 @@ primitive: BOX
             {
                 struct ast* c = astRGBA(
                     astNum(0), astNum(0), astNum(0),
-                    astOp('*', astRef("fillval"), astNum(255)));
+                    astOp('*', astRef_("fillval"), astNum(255)));
                 $$ = astAttr($1, ATTR_FILL, c);
             }
          | primitive FILL color
@@ -383,7 +387,7 @@ color: HEXCOLOR
             uint32_t i = strtoul(c, NULL, 16);
             struct ast *a;
             if (len < 8) {
-                a = astOp('*', astRef("fillval"), astNum(255));
+                a = astOp('*', astRef_("fillval"), astNum(255));
             } else {
                 a = astNum((uint8_t) i);
             }

@@ -63,7 +63,11 @@ int main(int argc, char **argv){
     initPresentation();
     pushTable();        // For macro and type checking during parsing and lexing
     while (yyparse());
-    while (popTable());
+
+    struct symTable *t;
+    while (t = popTable()){
+        freeTable(t);
+    }
 
     renderPresentation();
     return 0;

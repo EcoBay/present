@@ -203,7 +203,7 @@ chopLine(struct primitive *p) {
 }
 
 static void
-updateBoundingBox(struct primitive *p, struct vec2d *ps, uint8_t c){
+updateBoundingBox(struct primitive *p, struct vec2d *ps, size_t c){
     struct vec2d min = ps[0];
     struct vec2d max = ps[0];
     for(int i = 1; i < c; i++){
@@ -232,7 +232,7 @@ updateBoundingBox(struct primitive *p, struct vec2d *ps, uint8_t c){
 }
 
 static void
-prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, uint8_t *count){
+prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, size_t *count){
     int c = 0;
     for (struct textList *to = t; to; to = to -> next, c++);
 
@@ -357,7 +357,7 @@ void
 preparePrimitive(struct primitive *p){
     struct location *l;
     struct vec2d *ps;
-    uint8_t count;
+    size_t count;
     float rad = (p -> flags & 64) ? p -> rad : p -> expr;
 
     switch (p -> t) {
@@ -548,9 +548,9 @@ preparePrimitive(struct primitive *p){
             ps = malloc(count * sizeof(struct vec2d));
 
             e = p -> child;
-            for(int i = 0; e; e = e -> next, i++) {
-                ps[i * 2] = e -> a.pr -> nw;
-                ps[i * 2 + 1] = e -> a.pr -> se;
+            for(int i = 0; e; e = e -> next) {
+                ps[i++] = e -> a.pr -> nw;
+                ps[i++] = e -> a.pr -> se;
                 p -> end = e -> a.pr -> end;
             }
 

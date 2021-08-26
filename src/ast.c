@@ -174,12 +174,12 @@ astLoc(struct ast* lbl, int corner) {
     struct ast *a = malloc(sizeof(struct ast));
     a -> t = 0;
 
-    a -> l = malloc(sizeof(struct ast*));
+    a -> l = malloc(sizeof(struct ast));
     a -> l -> t = 1;
     a -> l -> l = lbl;
     a -> l -> r = astInt(corner);
 
-    a -> r = malloc(sizeof(struct ast*));
+    a -> r = malloc(sizeof(struct ast));
     a -> r -> t = 2;
     a -> r -> l = lbl;
     a -> r -> r = astInt(corner);
@@ -192,10 +192,10 @@ astHere() {
     struct ast *a = malloc(sizeof(struct ast));
     a -> t = 0;
 
-    a -> l = malloc(sizeof(struct ast*));
+    a -> l = malloc(sizeof(struct ast));
     a -> l -> t = 3;
 
-    a -> r = malloc(sizeof(struct ast*));
+    a -> r = malloc(sizeof(struct ast));
     a -> r -> t = 4;
     return a;
 }
@@ -258,7 +258,7 @@ astPrn(struct ast* l){
     a -> t = AST_PRN;
     a -> l = l;
     a -> r = NULL;
-    return (struct ast*) a;
+    return a;
 }
 
 static struct primitive*
@@ -337,10 +337,11 @@ evalAttr(struct _ast_attr *a) {
             break;
         case ATTR_CH:
             pushTable();
+            struct primitive *t = g_parent;
             g_parent = p;
             eval(a -> val);
             p -> tb = popTable();
-            g_parent = NULL;
+            g_parent = t;
             break;
 
         case ATTR_UP:
@@ -482,21 +483,15 @@ evalAttr(struct _ast_attr *a) {
             p -> flags &= ~12;
             p -> flags |= 4;
 
-            if (a -> val) {
-                p -> spacing = eval(a -> val).d;
-            } else {
-                p -> spacing = 0.05;
-            }
+            p -> spacing = a -> val ? eval(a -> val).d :
+                lookup("dashwid") -> val.d;
             break;
         case ATTR_DOTTED:
             p -> flags &= ~12;
             p -> flags |= 8;
 
-            if (a -> val) {
-                p -> spacing = eval(a -> val).d;
-            } else {
-                p -> spacing = 0.05;
-            }
+            p -> spacing  = a -> val ? eval(a -> val).d :
+                lookup("dashwid") -> val.d;
             break;
         case ATTR_SOLID:
             p -> flags &= ~16;
@@ -541,10 +536,12 @@ evalAttr(struct _ast_attr *a) {
             break;
         case ATTR_CHOP:
             if (p -> t > 3 && p -> t < 8) {
+                float cd = a -> val ? eval(a -> val).d
+                    : lookup("circlerad") -> val.d;
                 if (p -> flags & 128) {
-                    p -> chop2 = eval(a -> val).d;
+                    p -> chop2 = cd;
                 } else {
-                    p -> chop1 = p -> chop2 = eval(a -> val).d;
+                    p -> chop1 = p -> chop2 = cd;
                     p -> flags |= 128;
                 }
             }
@@ -882,14 +879,30 @@ void freeTree (struct ast* a) {
             break;
 
         case 2:  // may be freed twice
+            freeTree(a -> r);
+            break;
+
         case AST_DIR:
-        case AST_LBL:
         case AST_NUM:
-        case AST_REF:
         case AST_TEXT:
         case AST_INTL:
-        case AST_RST:
         case AST_PRIM:
+            break;
+
+        case AST_REF:
+        case AST_LBL:
+            struct _ast_term *t_term;
+            t_term = (struct _ast_term*) a;
+            free(t_term -> val.s);
+            break;
+        case AST_RST:
+            struct _ast_rst *t_rst = (struct _ast_rst*) a;
+            struct _text_list *tl = t_rst -> tl;
+            while (tl) {
+                struct _text_list *tl_0 = tl;
+                tl = tl -> next;
+                free(tl_0);
+            }
             break;
 
         case AST_KF:
@@ -899,6 +912,7 @@ void freeTree (struct ast* a) {
         case AST_ASGN:
             struct _ast_asgn *t_asgn = (struct _ast_asgn*) a;
             freeTree(t_asgn -> a);
+            free(t_asgn -> sym);
             break;
         case AST_ATTR:
             struct _ast_attr *t_attr = (struct _ast_attr*) a;
@@ -923,4 +937,5 @@ void freeTree (struct ast* a) {
             abort();
             break;
     }
+    free(a);
 }
