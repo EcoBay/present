@@ -152,6 +152,7 @@ chopBoundingBox(struct primitive *p){
         case PRIM_CIRCLE:
         case PRIM_ELLIPSE:
         case PRIM_ARC:
+            break;
     }
 
     float wid = p -> wid / 2, ht = p -> ht / 2;
@@ -355,7 +356,6 @@ translatePrimitive(struct primitive *p) {
 
 void
 preparePrimitive(struct primitive *p){
-    struct location *l;
     struct vec2d *ps;
     size_t count;
     float rad = (p -> flags & 64) ? p -> rad : p -> expr;
@@ -364,91 +364,96 @@ preparePrimitive(struct primitive *p){
         case PRIM_BOX:
         case PRIM_ELLIPSE:
         case PRIM_CIRCLE:
-            float wid = (p -> t == PRIM_CIRCLE) ?
-                rad * 2 : p -> wid;
-            float ht  = (p -> t == PRIM_CIRCLE) ?
-                rad * 2 : p -> ht;
+            {
+                float wid = (p -> t == PRIM_CIRCLE) ?
+                    rad * 2 : p -> wid;
+                float ht  = (p -> t == PRIM_CIRCLE) ?
+                    rad * 2 : p -> ht;
 
-            ps = malloc(4 * sizeof(struct vec2d));
-            count = 4;
+                ps = malloc(4 * sizeof(struct vec2d));
+                count = 4;
 
-            if (p -> direction == 2) {
-                ht *= -1.0;
-            } else if (p -> direction == 3) {
-                wid *= -1.0;
+                if (p -> direction == 2) {
+                    ht *= -1.0;
+                } else if (p -> direction == 3) {
+                    wid *= -1.0;
+                }
+
+                switch (p -> direction) {
+                    case 0:
+                    case 2:
+                        ps[0] = (struct vec2d) {
+                            p -> start.x,
+                            p -> start.y
+                        };
+                        ps[1] = (struct vec2d) {
+                            p -> start.x,
+                            p -> start.y + ht,
+                        };
+                        ps[2] = (struct vec2d) {
+                            p -> start.x - wid / 2,
+                            p -> start.y + ht  / 2,
+                        };
+                        ps[3] = (struct vec2d) {
+                            p -> start.x + wid / 2,
+                            p -> start.y + ht  / 2,
+                        };
+                        break;
+                    case 1:
+                    case 3:
+                        ps[0] = (struct vec2d) {
+                            p -> start.x,
+                            p -> start.y
+                        };
+                        ps[1] = (struct vec2d) {
+                            p -> start.x + wid,
+                            p -> start.y,
+                        };
+                        ps[2] = (struct vec2d) {
+                            p -> start.x + wid / 2,
+                            p -> start.y - ht  / 2,
+                        };
+                        ps[3] = (struct vec2d) {
+                            p -> start.x + wid / 2,
+                            p -> start.y + ht  / 2,
+                        };
+                        break;
+                }
+                p -> end = ps[1];
             }
-
-            switch (p -> direction) {
-                case 0:
-                case 2:
-                    ps[0] = (struct vec2d) {
-                        p -> start.x,
-                        p -> start.y
-                    };
-                    ps[1] = (struct vec2d) {
-                        p -> start.x,
-                        p -> start.y + ht,
-                    };
-                    ps[2] = (struct vec2d) {
-                        p -> start.x - wid / 2,
-                        p -> start.y + ht  / 2,
-                    };
-                    ps[3] = (struct vec2d) {
-                        p -> start.x + wid / 2,
-                        p -> start.y + ht  / 2,
-                    };
-                    break;
-                case 1:
-                case 3:
-                    ps[0] = (struct vec2d) {
-                        p -> start.x,
-                        p -> start.y
-                    };
-                    ps[1] = (struct vec2d) {
-                        p -> start.x + wid,
-                        p -> start.y,
-                    };
-                    ps[2] = (struct vec2d) {
-                        p -> start.x + wid / 2,
-                        p -> start.y - ht  / 2,
-                    };
-                    ps[3] = (struct vec2d) {
-                        p -> start.x + wid / 2,
-                        p -> start.y + ht  / 2,
-                    };
-                    break;
-            }
-            p -> end = ps[1];
             break;
         case PRIM_LINE:
         case PRIM_ARROW:
         case PRIM_SPLINE:
         case PRIM_MOVE:
-            l = getLastSegment(p);
-            if (!(p -> flags & 1)){
-                float e = p -> expr;
-                switch (p -> direction) {
-                    case 0: l -> y += e; break;
-                    case 1: l -> x += e; break;
-                    case 2: l -> y -= e; break;
-                    case 3: l -> x -= e; break;
-                }
-            };
-
-            count = 1;
-            for(l = p -> segments; l; l = l -> next, count++);
-
-            ps = malloc(count * sizeof(struct vec2d));
-            ps[0] = p -> start;
-
-            l = p -> segments;
-            for(int i = 1; i < count; i++){
-                ps[i] = (struct vec2d) {
-                    l -> x, l -> y
+            {
+                struct location *l;
+                l = getLastSegment(p);
+                if (!(p -> flags & 1)){
+                    float e = p -> expr;
+                    switch (p -> direction) {
+                        case 0: l -> y += e; break;
+                        case 1: l -> x += e; break;
+                        case 2: l -> y -= e; break;
+                        case 3: l -> x -= e; break;
+                    }
                 };
-                l = l -> next;
+
+                count = 1;
+                for(l = p -> segments; l; l = l -> next, count++);
+
+                ps = malloc(count * sizeof(struct vec2d));
+                ps[0] = p -> start;
+
+                l = p -> segments;
+                for(int i = 1; i < count; i++){
+                    ps[i] = (struct vec2d) {
+                        l -> x, l -> y
+                    };
+                    l = l -> next;
+                }
+                p -> end = ps[count - 1];
             }
-            p -> end = ps[count - 1];
             break;
         case PRIM_ARC:
             if (p -> flags & 1) { 
@@ -542,18 +547,19 @@ preparePrimitive(struct primitive *p){
             p -> end = p -> start;
             break;
         case PRIM_BLOCK:
-            count = 0;
-            struct event *e = p -> child;
-            for(; e; e = e -> next, count+=2);
-            ps = malloc(count * sizeof(struct vec2d));
+            {
+                count = 0;
+                struct event *e = p -> child;
+                for(; e; e = e -> next, count+=2);
+                ps = malloc(count * sizeof(struct vec2d));
 
-            e = p -> child;
-            for(int i = 0; e; e = e -> next) {
-                ps[i++] = e -> a.pr -> nw;
-                ps[i++] = e -> a.pr -> se;
-                p -> end = e -> a.pr -> end;
+                e = p -> child;
+                for(int i = 0; e; e = e -> next) {
+                    ps[i++] = e -> a.pr -> nw;
+                    ps[i++] = e -> a.pr -> se;
+                    p -> end = e -> a.pr -> end;
+                }
             }
-
             break;
     }
 

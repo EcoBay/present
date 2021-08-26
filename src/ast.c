@@ -269,27 +269,37 @@ evalPrim(struct _ast_prim *a) {
 
     switch (a -> pt) {
         case PRIM_BOX:
-            s = lookup("boxht");
-            p -> ht = s -> val.d;
-            s = lookup("boxwid");
-            p -> wid = s -> val.d;
+            {
+                s = lookup("boxht");
+                p -> ht = s -> val.d;
+                s = lookup("boxwid");
+                p -> wid = s -> val.d;
+            }
             break;
         case PRIM_CIRCLE:
-            s = lookup("circlerad");
-            p -> expr = s -> val.d;
+            {
+                s = lookup("circlerad");
+                p -> expr = s -> val.d;
+            }
             break;
         case PRIM_ELLIPSE:
-            s = lookup("ellipseht");
-            p -> ht = s -> val.d;
-            s = lookup("ellipsewid");
-            p -> wid = s -> val.d;
+            {
+                s = lookup("ellipseht");
+                p -> ht = s -> val.d;
+                s = lookup("ellipsewid");
+                p -> wid = s -> val.d;
+            }
             break;
         case PRIM_ARC:
-            s = lookup("arcrad");
-            p -> expr = s -> val.d;
+            {
+                s = lookup("arcrad");
+                p -> expr = s -> val.d;
+            }
             break;
         case PRIM_ARROW:
-            p -> arrowStyle = 1;
+            {
+                p -> arrowStyle = 1;
+            }
         case PRIM_LINE:
         case PRIM_SPLINE:
             switch (direction) {
@@ -333,15 +343,19 @@ evalAttr(struct _ast_attr *a) {
 
     switch (a -> attr) {
         case ATTR_TXT:
-            p -> txt = eval(a -> val, p -> txt).tl;
+            {
+                p -> txt = eval(a -> val, p -> txt).tl;
+            }
             break;
         case ATTR_CH:
-            pushTable();
-            struct primitive *t = g_parent;
-            g_parent = p;
-            eval(a -> val);
-            p -> tb = popTable();
-            g_parent = t;
+            {
+                pushTable();
+                struct primitive *t = g_parent;
+                g_parent = p;
+                eval(a -> val);
+                p -> tb = popTable();
+                g_parent = t;
+            }
             break;
 
         case ATTR_UP:
@@ -466,63 +480,93 @@ evalAttr(struct _ast_attr *a) {
             }
             break;
         case ATTR_LARROW:
-            p -> arrowStyle &= ~3;
-            p -> arrowStyle |= 2;
+            {
+                p -> arrowStyle &= ~3;
+                p -> arrowStyle |= 2;
+            }
             break;
         case ATTR_RARROW:
-            p -> arrowStyle &= ~3;
-            p -> arrowStyle |= 1;
+            {
+                p -> arrowStyle &= ~3;
+                p -> arrowStyle |= 1;
+            }
             break;
         case ATTR_LRARROW:
-            p -> arrowStyle |= 3;
+            {
+                p -> arrowStyle |= 3;
+            }
             break;
         case ATTR_CW:
-            p -> flags |= 2;
+            {
+                p -> flags |= 2;
+            }
             break;
         case ATTR_DASHED:
-            p -> flags &= ~12;
-            p -> flags |= 4;
+            {
+                p -> flags &= ~12;
+                p -> flags |= 4;
 
-            p -> spacing = a -> val ? eval(a -> val).d :
-                lookup("dashwid") -> val.d;
+                p -> spacing = a -> val ? eval(a -> val).d :
+                    lookup("dashwid") -> val.d;
+            }
             break;
         case ATTR_DOTTED:
-            p -> flags &= ~12;
-            p -> flags |= 8;
+            {
+                p -> flags &= ~12;
+                p -> flags |= 8;
 
-            p -> spacing  = a -> val ? eval(a -> val).d :
-                lookup("dashwid") -> val.d;
+                p -> spacing  = a -> val ? eval(a -> val).d :
+                    lookup("dashwid") -> val.d;
+            }
             break;
         case ATTR_SOLID:
-            p -> flags &= ~16;
+            {
+                p -> flags &= ~16;
+            }
             break;
         case ATTR_INVIS:
-            p -> flags |= 16;
+            {
+                p -> flags |= 16;
+            }
             break;
         case ATTR_FILL:
-            p -> flags |= 32;
-            p -> fill = eval(a -> val).c;
+            {
+                p -> flags |= 32;
+                p -> fill = eval(a -> val).c;
+            }
             break;
         case ATTR_HT:
-            p -> ht = eval(a -> val).d;
+            {
+                p -> ht = eval(a -> val).d;
+            }
             break;
         case ATTR_WID:
-            p -> wid = eval(a -> val).d;
+            {
+                p -> wid = eval(a -> val).d;
+            }
             break;
         case ATTR_RAD:
-            p -> rad = eval(a -> val).d;
-            p -> flags |= 64;
+            {
+                p -> rad = eval(a -> val).d;
+                p -> flags |= 64;
+            }
             break;
         case ATTR_DIAM:
-            p -> rad = eval(a -> val).d / 2.0;
-            p -> flags |= 64;
+            {
+                p -> rad = eval(a -> val).d / 2.0;
+                p -> flags |= 64;
+            }
             break;
         case ATTR_EXPR:
-            p -> expr = eval(a -> val).d / 2.0;
+            {
+                p -> expr = eval(a -> val).d / 2.0;
+            }
             break;
         case ATTR_FROM:
-            p -> start.x = eval(a -> val -> l).d;
-            p -> start.y = eval(a -> val -> r).d;
+            {
+                p -> start.x = eval(a -> val -> l).d;
+                p -> start.y = eval(a -> val -> r).d;
+            }
             break;
         case ATTR_TO:
             if (p -> t > 2 && p -> t < 8) {
@@ -547,15 +591,19 @@ evalAttr(struct _ast_attr *a) {
             }
             break;
         case ATTR_WITH:
-            p -> with = eval(a -> val).i;
+            {
+                p -> with = eval(a -> val).i;
+            }
             break;
         case ATTR_AT:
-            if (!p -> at) {
-                p -> at = malloc(sizeof(struct vec2d));
-            }
+            {
+                if (!p -> at) {
+                    p -> at = malloc(sizeof(struct vec2d));
+                }
 
-            p -> at -> x = eval(a -> val -> l).d;
-            p -> at -> y = eval(a -> val -> r).d;
+                p -> at -> x = eval(a -> val -> l).d;
+                p -> at -> y = eval(a -> val -> r).d;
+            }
             break;
     }
 
@@ -565,7 +613,7 @@ evalAttr(struct _ast_attr *a) {
 union ast_type
 eval(struct ast *a, ...) {
     if (!a) return (union ast_type) {.i = 0};
-    union ast_type ret;
+    union ast_type ret = {.d = 0};
     struct symbol *s;
 
     va_list args;
@@ -608,226 +656,300 @@ eval(struct ast *a, ...) {
             }
             break;
         case AST_NUM:
-            ret.d = ((struct _ast_term*) a) -> val.d;
+            {
+                ret.d = ((struct _ast_term*) a) -> val.d;
+            }
             break;
         case AST_REF:
-            s = lookup(((struct _ast_term*) a) -> val.s);
-            ret.d = s -> val.d;
+            {
+                s = lookup(((struct _ast_term*) a) -> val.s);
+                ret.d = s -> val.d;
+            }
             break;
         case '+':
-            ret.d = eval(a -> l).d + eval(a -> r).d;
+            {
+                ret.d = eval(a -> l).d + eval(a -> r).d;
+            }
             break;
         case '-':
-            ret.d = eval(a -> l).d + eval(a -> r).d;
+            {
+                ret.d = eval(a -> l).d + eval(a -> r).d;
+            }
             break;
         case '*':
-            ret.d = eval(a -> l).d * eval(a -> r).d;
+            {
+                ret.d = eval(a -> l).d * eval(a -> r).d;
+            }
             break;
         case '/':
-            float divisor = eval(a -> r).d;
-            if (divisor == 0.0) {
-                yyerror("Error: division by zero\n");
-                abort();
+            {
+                float divisor = eval(a -> r).d;
+                if (divisor == 0.0) {
+                    yyerror("Error: division by zero\n");
+                    abort();
+                }
+                ret.d = eval(a -> l).d / divisor;
             }
-            ret.d = eval(a -> l).d / divisor;
             break;
         case '%':
-            float modulo = eval(a -> r).d;
-            if (modulo == 0.0) {
-                yyerror("Error: modulos by zero\n");
-                abort();
+            {
+                float modulo = eval(a -> r).d;
+                if (modulo == 0.0) {
+                    yyerror("Error: modulos by zero\n");
+                    abort();
+                }
+                ret.d = fmodf(eval(a -> l).d, modulo);
             }
-            ret.d = fmodf(eval(a -> l).d, modulo);
             break;
         case '^':
-            errno = 0;
-            ret.d = pow(eval(a -> l).d, eval(a -> r).d);
-            if (errno == EDOM) {
-                yyerror("Error: arguments to '&' is out of domain\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = pow(eval(a -> l).d, eval(a -> r).d);
+                if (errno == EDOM) {
+                    yyerror("Error: arguments to '&' is out of domain\n");
+                    abort();
+                }
             }
             break;
         case '!':
-            ret.d = (eval(a -> l).d == 0.0);
+            {
+                ret.d = (eval(a -> l).d == 0.0);
+            }
             break;
         case AST_UNM:
-            ret.d = - eval(a -> l).d;
+            {
+                ret.d = - eval(a -> l).d;
+            }
             break;
         case AST_SIN:
-            errno = 0;
-            ret.d = sin(eval(a -> l).d);
-            if (errno == ERANGE) {
-                yyerror("Error: sin result out of range\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = sin(eval(a -> l).d);
+                if (errno == ERANGE) {
+                    yyerror("Error: sin result out of range\n");
+                    abort();
+                }
             }
             break;
         case AST_COS:
-            errno = 0;
-            ret.d = cos(eval(a -> l).d);
-            if (errno == ERANGE) {
-                yyerror("Error: cos result out of range\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = cos(eval(a -> l).d);
+                if (errno == ERANGE) {
+                    yyerror("Error: cos result out of range\n");
+                    abort();
+                }
             }
             break;
         case AST_ATAN2:
-            errno = 0;
-            ret.d = atan2(eval(a -> l).d, eval(a -> r).d);
-            if (errno == EDOM) {
-                yyerror("Error: atan2 argument out of domain\n");
-                abort();
-            }
-            if (errno == ERANGE) {
-                yyerror("Error: atan2 result out of range\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = atan2(eval(a -> l).d, eval(a -> r).d);
+                if (errno == EDOM) {
+                    yyerror("Error: atan2 argument out of domain\n");
+                    abort();
+                }
+                if (errno == ERANGE) {
+                    yyerror("Error: atan2 result out of range\n");
+                    abort();
+                }
             }
             break;
         case AST_LOG:
-            errno = 0;
-            ret.d = log(eval(a -> l).d);
-            if (errno == ERANGE) {
-                yyerror("Error: log result out of range\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = log(eval(a -> l).d);
+                if (errno == ERANGE) {
+                    yyerror("Error: log result out of range\n");
+                    abort();
+                }
             }
             break;
         case AST_EXP:
-            errno = 0;
-            ret.d = pow(10.0, eval(a -> l).d);
-            if (errno == ERANGE) {
-                yyerror("Error: exp result out of range\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = pow(10.0, eval(a -> l).d);
+                if (errno == ERANGE) {
+                    yyerror("Error: exp result out of range\n");
+                    abort();
+                }
             }
             break;
         case AST_SQRT:
-            errno = 0;
-            ret.d = sqrt(eval(a -> l).d);
-            if (errno == EDOM) {
-                yyerror("error: sqrt result out of range\n");
-                abort();
+            {
+                errno = 0;
+                ret.d = sqrt(eval(a -> l).d);
+                if (errno == EDOM) {
+                    yyerror("error: sqrt result out of range\n");
+                    abort();
+                }
             }
             break;
         case AST_MAX:
-            ret.d = MAX(eval(a -> l).d, eval(a -> r).d);
+            {
+                ret.d = MAX(eval(a -> l).d, eval(a -> r).d);
+            }
             break;
         case AST_MIN:
-            ret.d = MIN(eval(a -> l).d, eval(a -> r).d);
+            {
+                ret.d = MIN(eval(a -> l).d, eval(a -> r).d);
+            }
             break;
         case AST_INT:
-            ret.d = INT(eval(a -> l).d);
+            {
+                ret.d = INT(eval(a -> l).d);
+            }
             break;
         case AST_RAND:
-            ret.d = (float) rand() / (float) RAND_MAX;
+            {
+                ret.d = (float) rand() / (float) RAND_MAX;
+            }
             break;
         case AST_ABS:
-            ret.d = fabsf(eval(a -> l).d);
+            {
+                ret.d = fabsf(eval(a -> l).d);
+            }
             break;
 
         case AST_STMT:
-            eval(a -> l);
-            eval(a -> r);
+            {
+                eval(a -> l);
+                eval(a -> r);
+            }
             break;
         case AST_GRP:
-            struct vec2d c;
-            getCursor(&c);
-            int dir = getDirection();
-            pushTable();
+            {
+                struct vec2d c;
+                getCursor(&c);
+                int dir = getDirection();
+                pushTable();
 
-            eval(a -> l);
+                eval(a -> l);
 
-            freeTable(popTable());
-            setDirection(dir);
-            setCursor(&c);
+                freeTable(popTable());
+                setDirection(dir);
+                setCursor(&c);
+            }
             break;
         case AST_PRIM:
-            ret.p = evalPrim( (struct _ast_prim*) a );
+            {
+                ret.p = evalPrim( (struct _ast_prim*) a );
+            }
             break;
         case AST_ATTR:
-            ret.p = evalAttr( (struct _ast_attr*) a );
+            {
+                ret.p = evalAttr( (struct _ast_attr*) a );
+            }
             break;
         case AST_TL:
-            s = lookup("ps");
-            struct _ast_tl *t_tl = (struct _ast_tl*) a;
-            char *str = eval(t_tl -> s).s;
-            char *id = createTex(str, s -> val.d);
-            if (tex2SVG(id)) {
-                yyerror("Error: Cannot create text \"%s\"\n", str);
-                abort();
+            {
+                s = lookup("ps");
+                struct _ast_tl *t = (struct _ast_tl*) a;
+                char *str = eval(t -> s).s;
+                char *id = createTex(str, s -> val.d);
+                if (tex2SVG(id)) {
+                    yyerror("Error: Cannot create text \"%s\"\n", str);
+                    abort();
+                }
+
+                RsvgHandle *h = getSVGHandler(id);
+                ret.tl = addTextList(h, t -> p, va_arg(args, struct textList*));
+
+                free(id);
+                free(str);
             }
-
-            RsvgHandle *h = getSVGHandler(id);
-            ret.tl = addTextList(h, t_tl -> p, va_arg(args, struct textList*));
-
-            free(id);
-            free(str);
             break;
         case AST_RGBA:
-            struct _ast_rgba *t_rgba = (struct _ast_rgba*) a;
-            ret.c = malloc(sizeof(struct color));
-            ret.c -> r = eval(t_rgba -> r).d;
-            ret.c -> g = eval(t_rgba -> g).d;
-            ret.c -> b = eval(t_rgba -> b).d;
-            ret.c -> a = eval(t_rgba -> a).d;
+            {
+                struct _ast_rgba *t = (struct _ast_rgba*) a;
+                ret.c = malloc(sizeof(struct color));
+                ret.c -> r = eval(t -> r).d;
+                ret.c -> g = eval(t -> g).d;
+                ret.c -> b = eval(t -> b).d;
+                ret.c -> a = eval(t -> a).d;
+            }
             break;
         case AST_TEXT:
-            ret.s = ((struct _ast_term*) a) -> val.s;
+            {
+                ret.s = ((struct _ast_term*) a) -> val.s;
+            }
             break;
         case AST_INTL:
-            ret.i = ((struct _ast_term*) a) -> val.i;
+            {
+                ret.i = ((struct _ast_term*) a) -> val.i;
+            }
             break;
         case AST_DRAW:
-            struct primitive *p = eval(a -> l).p;
-            preparePrimitive(p);
-            ret.e = newDrawEvent(p);
+            {
+                struct primitive *p = eval(a -> l).p;
+                preparePrimitive(p);
+                ret.e = newDrawEvent(p);
+            }
             break;
         case AST_DIR:
-            setDirection( ((struct _ast_term*) a ) -> val.i );
+            {
+                setDirection( ((struct _ast_term*) a ) -> val.i );
+            }
             break;
         case AST_KF:
-            struct _ast_kf *t_kf = (struct _ast_kf*) a;
-            struct ast *d = t_kf -> duration;
-            if (d) {
-                newKeyframe(eval(d).d, t_kf -> easingFunc);
-            } else {
-                newKeyframe(1.0, t_kf -> easingFunc);
+            {
+                struct _ast_kf *t = (struct _ast_kf*) a;
+                struct ast *d = t -> duration;
+                if (d) {
+                    newKeyframe(eval(d).d, t -> easingFunc);
+                } else {
+                    newKeyframe(1.0, t -> easingFunc);
+                }
             }
             break;
         case AST_TBL:
-            struct symTable *tb;
-            tb =  eval(a -> l).e -> a.pr -> tb;
-            tb = switchTable(tb);
+            {
+                struct symTable *tb;
+                tb =  eval(a -> l).e -> a.pr -> tb;
+                tb = switchTable(tb);
 
-            ret.e = eval(a -> r).e;
+                ret.e = eval(a -> r).e;
 
-            switchTable(tb);
+                switchTable(tb);
+            }
             break;
         case AST_LBL:
-            s = lookup(((struct _ast_term*) a) -> val.s);
-            ret.e = s -> val.e;
+            {
+                s = lookup(((struct _ast_term*) a) -> val.s);
+                ret.e = s -> val.e;
+            }
             break;
         case AST_ASGN:
-            struct _ast_asgn *t_asgn = (struct _ast_asgn*) a;
-            union T v;
-            if (t_asgn -> varT == SYM_DOUBLE) {
-                ret.d = v.d = eval(t_asgn -> a).d;
-                setSym(t_asgn -> sym, SYM_DOUBLE, v);
-            } else {
-                ret.e = v.e = eval(t_asgn -> a).e;
-                setSym(t_asgn -> sym, SYM_EVENT, v);
+            {
+                struct _ast_asgn *t = (struct _ast_asgn*) a;
+                union T v;
+                if (t -> varT == SYM_DOUBLE) {
+                    ret.d = v.d = eval(t -> a).d;
+                    setSym(t -> sym, SYM_DOUBLE, v);
+                } else {
+                    ret.e = v.e = eval(t -> a).e;
+                    setSym(t -> sym, SYM_EVENT, v);
+                }
             }
             break;
         case AST_RST:
-            struct _ast_rst *t_rst = (struct _ast_rst*) a;
-            if (t_rst -> tl) {
-                struct _text_list *tl = t_rst -> tl;
-                while (tl) {
-                    resetSym(tl -> s);
-                    tl = tl -> next;
+            {
+                struct _ast_rst *t = (struct _ast_rst*) a;
+                if (t -> tl) {
+                    struct _text_list *tl = t -> tl;
+                    while (tl) {
+                        resetSym(tl -> s);
+                        tl = tl -> next;
+                    }
+                } else {
+                    clearSym();
                 }
-            } else {
-                clearSym();
             }
             break;
         case AST_PRN:
-            printf("%g\n", eval(a -> l).d);
+            {
+                printf("%g\n", eval(a -> l).d);
+            }
             break;
 
         default:
@@ -891,44 +1013,58 @@ void freeTree (struct ast* a) {
 
         case AST_REF:
         case AST_LBL:
-            struct _ast_term *t_term;
-            t_term = (struct _ast_term*) a;
-            free(t_term -> val.s);
+            {
+                struct _ast_term *t;
+                t = (struct _ast_term*) a;
+                free(t -> val.s);
+            }
             break;
         case AST_RST:
-            struct _ast_rst *t_rst = (struct _ast_rst*) a;
-            struct _text_list *tl = t_rst -> tl;
-            while (tl) {
-                struct _text_list *tl_0 = tl;
-                tl = tl -> next;
-                free(tl_0);
+            {
+                struct _ast_rst *t = (struct _ast_rst*) a;
+                struct _text_list *tl = t -> tl;
+                while (tl) {
+                    struct _text_list *tl_0 = tl;
+                    tl = tl -> next;
+                    free(tl_0);
+                }
             }
             break;
 
         case AST_KF:
-            struct _ast_kf *t_kf = (struct _ast_kf*) a;
-            freeTree(t_kf -> duration);
+            {
+                struct _ast_kf *t = (struct _ast_kf*) a;
+                freeTree(t -> duration);
+            }
             break;
         case AST_ASGN:
-            struct _ast_asgn *t_asgn = (struct _ast_asgn*) a;
-            freeTree(t_asgn -> a);
-            free(t_asgn -> sym);
+            {
+                struct _ast_asgn *t = (struct _ast_asgn*) a;
+                freeTree(t -> a);
+                free(t -> sym);
+            }
             break;
         case AST_ATTR:
-            struct _ast_attr *t_attr = (struct _ast_attr*) a;
-            freeTree(t_attr -> p);
-            freeTree(t_attr -> val);
+            {
+                struct _ast_attr *t = (struct _ast_attr*) a;
+                freeTree(t -> p);
+                freeTree(t -> val);
+            }
             break;
         case AST_TL:
-            struct _ast_tl *t_tl = (struct _ast_tl*) a;
-            freeTree(t_tl -> s);
+            {
+                struct _ast_tl *t = (struct _ast_tl*) a;
+                freeTree(t -> s);
+            }
             break;
         case AST_RGBA:
-            struct _ast_rgba *t_rgba = (struct _ast_rgba*) a;
-            freeTree(t_rgba -> r);
-            freeTree(t_rgba -> g);
-            freeTree(t_rgba -> b);
-            freeTree(t_rgba -> a);
+            {
+                struct _ast_rgba *t = (struct _ast_rgba*) a;
+                freeTree(t -> r);
+                freeTree(t -> g);
+                freeTree(t -> b);
+                freeTree(t -> a);
+            }
             break;
 
         default:
