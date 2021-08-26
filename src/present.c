@@ -53,6 +53,60 @@ int main(int argc, char **argv){
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGINT, &sa,  NULL);
 
+    char opt;
+    char *out = strdup("out.mp4");
+    while ((opt = getopt(argc, argv, "+:ilGO:")) != EOF) {
+        switch (opt) {
+            case 'l':
+                // TODO: layout preprocessor
+                break;
+            case 'i':
+                // TODO: Interactive mode
+                break;
+            case 'G':
+                // TODO: Custom grap preprocessor
+                break;
+            case 'O':
+                free(out);
+                out = strdup(optarg);
+                break;
+            case '?':
+                fprintf(stderr, "Error: unrecognized option '%c'\n",
+                        optopt);
+                exit(EXIT_FAILURE);
+                break;
+            case ':':
+                fprintf(stderr, "Error: '%c' option requires "
+                        "an argument\n", optopt);
+                exit(EXIT_FAILURE);
+                break;
+        }
+    }
+
+    if (optind < argc) {
+        if (!strcmp(argv[optind], "-")) {
+            yyin = stdin;
+        } else {
+            if (!(yyin = fopen(argv[optind], "r"))) {
+                fprintf(stderr, "Error: input file %s can not "
+                        "be read\n", argv[optind]);
+                exit(EXIT_FAILURE);
+            }
+        }
+    } else {
+        yyin = stdin;
+    }
+
+    if (optind + 1 < argc) {
+        free(out);
+        out = strdup(argv[optind + 1]);
+    }
+
+    if (!strcmp(out, "-")) {
+        free(out);
+        out = strdup("-f matroska -");
+    }
+
     pushTable();
     int c = sizeof(builtIn) / sizeof(builtIn[0]);
     for (int i = 0; i < c; i++) {
@@ -62,6 +116,8 @@ int main(int argc, char **argv){
 
     initPresentation();
     while (yyparse());
-    renderPresentation();
+    renderPresentation(out);
+    free(out);
+
     return 0;
 }

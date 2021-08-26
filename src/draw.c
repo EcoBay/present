@@ -32,7 +32,6 @@ int WIDTH = 960;
 int HEIGHT = 720;
 int DPI = 96;
 const static int FRAMERATE = 24;
-const char *OUTNAME = "test.mp4";
 
 static void
 dotted(cairo_t *cr, float spacing, float ps) {
@@ -273,7 +272,7 @@ renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
 }
 
 void
-renderPresentation(){
+renderPresentation(const char* filename){
     char *ffmpeg_cmd = malloc(256);
 
     snprintf(ffmpeg_cmd, 256,
@@ -281,7 +280,7 @@ renderPresentation(){
             "-s %dx%d -i - -threads 0 -preset ultrafast "
             "-y -pix_fmt yuv420p -crf 23 %s "
             "-hide_banner -loglevel error " ,
-            FRAMERATE, WIDTH, HEIGHT, OUTNAME);
+            FRAMERATE, WIDTH, HEIGHT, filename);
 
     FILE *ffmpeg = popen(ffmpeg_cmd, "w");
     if (!ffmpeg) {
