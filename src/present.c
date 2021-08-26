@@ -53,7 +53,7 @@ int main(int argc, char **argv){
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGINT, &sa,  NULL);
 
-    char opt;
+    int opt;
     char *out = strdup("out.mp4");
     while ((opt = getopt(argc, argv, "+:ilGO:")) != EOF) {
         switch (opt) {

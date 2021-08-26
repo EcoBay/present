@@ -22,7 +22,7 @@ static unsigned
 hash(char *s, int pt){
     unsigned h = pt;
     char c;
-    while (c = *s++) h = h*9 ^ c;
+    while ((c = *s++)) h = h*9 ^ c;
     return h;
 }
 
@@ -73,11 +73,11 @@ int tex2SVG(char *id){
     snprintf(svgCMD, 256, "pdf2svg %s %s", pdfFile, svgFile);
 
     int latexRet, svgRet;
-    if (latexRet = system(latexCMD)){
+    if ((latexRet = system(latexCMD))) {
         return latexRet;
     }
 
-    if (svgRet = system(svgCMD)) {
+    if ((svgRet = system(svgCMD))) {
         return svgRet;
     }
 
