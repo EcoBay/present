@@ -4,6 +4,6 @@
 extern int WIDTH;
 extern int HEIGHT;
 extern int DPI;
-void renderPresentation();
+void renderPresentation(const char*);
 
 #endif
