@@ -106,6 +106,7 @@ newDrawEvent(struct primitive *p){
         }
     }
 
+    addPrim(p -> t, e);
     return e;
 }
 

@@ -57,6 +57,13 @@ struct _ast_kf {
     int easingFunc;
 };
 
+struct _ast_ord {
+    int t;
+    int i;
+    enum primitiveType T;
+    int r;
+};
+
 struct _ast_term {
     int t;
     union ast_type val;
@@ -170,18 +177,18 @@ astNum(float d) {
 }
 
 struct ast*
-astLoc(struct ast* lbl, int corner) {
+astLoc(struct ast* e, int corner) {
     struct ast *a = malloc(sizeof(struct ast));
     a -> t = 0;
 
     a -> l = malloc(sizeof(struct ast));
     a -> l -> t = 1;
-    a -> l -> l = lbl;
+    a -> l -> l = e;
     a -> l -> r = astInt(corner);
 
     a -> r = malloc(sizeof(struct ast));
     a -> r -> t = 2;
-    a -> r -> l = lbl;
+    a -> r -> l = e;
     a -> r -> r = astInt(corner);
 
     return a;
@@ -231,6 +238,16 @@ astLbl(char *s) {
     struct _ast_term *a = malloc(sizeof(struct _ast_term));
     a -> t = AST_LBL; 
     a -> val.s = s;
+    return (struct ast*) a;
+}
+
+struct ast*
+astOrd(int i, enum primitiveType T, int r) {
+    struct _ast_ord *a = malloc(sizeof(struct _ast_ord));
+    a -> t = AST_ORD;
+    a -> i = i;
+    a -> T = T;
+    a -> r = r;
     return (struct ast*) a;
 }
 
@@ -612,8 +629,8 @@ evalAttr(struct _ast_attr *a) {
 
 union ast_type
 eval(struct ast *a, ...) {
-    if (!a) return (union ast_type) {.i = 0};
-    union ast_type ret = {.d = 0};
+    union ast_type ret = {.i = 0};
+    if (!a) return ret;
     struct symbol *s;
 
     va_list args;
@@ -919,6 +936,24 @@ eval(struct ast *a, ...) {
                 ret.e = s -> val.e;
             }
             break;
+        case AST_ORD:
+            {
+                struct _ast_ord *t = (struct _ast_ord*) a;
+                if (t -> r) {
+                    if (!(ret.e = getPrim_r(t -> T, t -> i))) {
+                        fprintf(stderr, "Error: %dth primitive "
+                                "out of range\n", t -> i);
+                        abort();
+                    }
+                } else {
+                    if (!(ret.e = getPrim(t -> T, t -> i))) {
+                        fprintf(stderr, "Error: %dth last primitive "
+                                "out of range\n", t -> i);
+                        abort();
+                    }
+                }
+            }
+            break;
         case AST_ASGN:
             {
                 struct _ast_asgn *t = (struct _ast_asgn*) a;
@@ -970,8 +1005,6 @@ void freeTree (struct ast* a) {
     switch (a -> t) {
         case 0:
         case 1:
-        case 3:
-        case 4:
         case '+':
         case '-':
         case '*':
@@ -1004,11 +1037,14 @@ void freeTree (struct ast* a) {
             freeTree(a -> r);
             break;
 
+        case 3:
+        case 4:
         case AST_DIR:
         case AST_NUM:
         case AST_TEXT:
         case AST_INTL:
         case AST_PRIM:
+        case AST_ORD:
             break;
 
         case AST_REF:
@@ -1030,7 +1066,6 @@ void freeTree (struct ast* a) {
                 }
             }
             break;
-
         case AST_KF:
             {
                 struct _ast_kf *t = (struct _ast_kf*) a;

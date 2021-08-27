@@ -8,6 +8,7 @@
 extern struct presentation *g_presentation;
 extern struct primitive *g_parent;
 
+#define NUM_PRIM_TYPE 10
 enum primitiveType {
     PRIM_BOX,
     PRIM_ELLIPSE,

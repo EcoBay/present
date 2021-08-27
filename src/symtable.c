@@ -26,19 +26,6 @@ lookup(char *sym) {
     return NULL;
 }
 
-struct symbol*
-lookup_0(char *sym) {
-    struct symbol *s;
-    unsigned h = hash(sym) & HASH_MOD;
-
-    struct symTable *st = g_symtable;
-    for (s = st -> table[h]; s; s = s -> next) {
-        if (strcmp(s -> sym, sym) == 0) return s;
-    }
-
-    return NULL;
-}
-
 void
 setSym(char *sym, enum symType t, union T val) {
     unsigned h = hash(sym) & HASH_MOD;
@@ -110,6 +97,46 @@ clearSym() {
 }
 
 void
+addPrim(enum primitiveType T, struct event *e) {
+    struct eventList *t = malloc(sizeof(struct eventList));
+    t -> next = NULL;
+    t -> e = e;
+
+    struct eventList *l = getLast(g_symtable -> list[T]);
+    if (l) {
+        t -> prev = l;
+        l -> next = t;
+    } else {
+        t -> prev = NULL;
+        g_symtable -> list[T] = t;
+    }
+}
+
+struct event*
+getPrim(enum primitiveType T, int loc) {
+    struct eventList *l = g_symtable -> list[T];
+
+    for (int i = 1; i < loc; i++) { // One indexed
+        if (!l) return NULL;
+        l = l -> next;
+    }
+
+    return l -> e;
+}
+
+struct event*
+getPrim_r(enum primitiveType T, int loc) {
+    struct eventList *l = getLast(g_symtable -> list[T]);
+
+    for (int i = 1; i < loc; i++) { // One indexed
+        if (!l) return NULL;
+        l = l -> prev;
+    }
+
+    return l -> e;
+}
+
+void
 pushTable() {
     struct symTable *s;
     s = malloc(sizeof(struct symTable));
@@ -117,6 +144,9 @@ pushTable() {
     s -> next = g_symtable;
     for (int i = 0; i < HASH_SIZE; i++) {
         s -> table[i] = NULL;
+    }
+    for (int i = 0; i < NUM_PRIM_TYPE; i++) {
+        s -> list[i] = NULL;
     }
 
     g_symtable = s;
@@ -142,13 +172,21 @@ freeTable(struct symTable *tb) {
     for (int i = 0; i < HASH_SIZE; i++) {
         struct symbol *s = tb -> table[i];
         while (s) {
-            struct symbol *t = s;
-            s = s -> next;
-            if (t -> t == SYM_MACRO) {
-                free(t -> val.s);
+            struct symbol *next = s -> next;
+            if (s -> t == SYM_MACRO) {
+                free(s -> val.s);
             }
-            free(t -> sym);
-            free(t);
+            free(s -> sym);
+            free(s);
+            s = next;
+        }
+    }
+    for (int i =0; i < NUM_PRIM_TYPE; i++) {
+        struct eventList *l = tb -> list[i];
+        while (l) {
+            struct eventList *next = l -> next;
+            free(l);
+            l = next;
         }
     }
     free(tb);

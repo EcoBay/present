@@ -31,6 +31,7 @@ enum nodetype {
     AST_RST,
     AST_TBL,
     AST_LBL,
+    AST_ORD,
     AST_PRN,
 
     /* expressions */
@@ -107,6 +108,7 @@ struct ast* astInt(int i);
 struct ast* astRef(char*);
 struct ast* astTbl(struct ast*, struct ast*);
 struct ast* astLbl(char*);
+struct ast* astOrd(int, enum primitiveType, int);
 struct ast* astAsgn(char*, enum symType, struct ast*);
 struct ast* astRst(void*);
 struct ast* astPrn(struct ast*);

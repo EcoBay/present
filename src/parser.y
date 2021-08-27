@@ -33,6 +33,7 @@ struct _t {
 
 /* keywords */
 %token FOR OF HERE AND BETWEEN DEFINE RESET PRINT
+%token LAST TEXT_L BLOCK
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -56,6 +57,7 @@ u
 /* values */
 %token <s> TEXT HEXCOLOR IDENTIFIER LABEL TEMPLATE
 %token <d> NUMBER
+%token <i> ORDINAL
 
 /* present extensions */
 %token KEYFRAME SCENE
@@ -69,11 +71,11 @@ u
 
 %token EOL
 
-%type <a> program statement element present label
+%type <a> program statement element present label nth_prim
 %type <a> keyframe_stmt direction_stmt element_list
 %type <a> primitive expr duration color position place
 %type <a> position_not_place expr_pair reset prim_labels
-%type <i> positioning easing corner optional_corner
+%type <i> positioning easing corner optional_corner primitive_type
 %type <tl> iden_list
 
 %left TEXT
@@ -558,15 +560,38 @@ expr_pair: expr ',' expr        { $$ = astOp(0, $1, $3); }
          | '(' expr_pair ')'    { $$ = $2; }
 ;
 
-place: label optional_corner    { $$ = astLoc($1, $2); }
-     | label                    { $$ = astLoc($1, 15); }
-     | corner OF label          { $$ = astLoc($3, $1); }
-     | optional_corner OF label { $$ = astLoc($3, $1); }
-     | HERE                     { $$ = astHere(); }
+place: label optional_corner        { $$ = astLoc($1, $2); }
+     | label                        { $$ = astLoc($1, 15); }
+     | corner OF label              { $$ = astLoc($3, $1); }
+     | optional_corner OF label     { $$ = astLoc($3, $1); }
+     | nth_prim optional_corner     { $$ = astLoc($1 ,$2); }
+     | nth_prim                     { $$ = astLoc($1, 15); }
+     | corner OF nth_prim           { $$ = astLoc($3, $1); }
+     | optional_corner OF nth_prim  { $$ = astLoc($3, $1); }
+     | HERE                         { $$ = astHere(); }
 ;
 
 label: LABEL            { $$ = astLbl($1); }
      | label '.' LABEL  { $$ = astTbl($1, astLbl($3)); }
+;
+
+nth_prim: ORDINAL primitive_type        { $$ = astOrd($1, $2, 0); }
+        | ORDINAL LAST primitive_type   { $$ = astOrd($1, $3, 1); }
+        | LAST primitive_type           { $$ = astOrd( 1, $2, 1); }
+;
+
+primitive_type: BOX     { $$ = PRIM_BOX; }
+              | ELLIPSE { $$ = PRIM_ELLIPSE; }
+              | CIRCLE  { $$ = PRIM_CIRCLE; }
+              | ARC     { $$ = PRIM_ARC; }
+              | LINE    { $$ = PRIM_LINE; }
+              | ARROW   { $$ = PRIM_ARROW; }
+              | SPLINE  { $$ = PRIM_SPLINE; }
+              | MOVE    { $$ = PRIM_MOVE; }
+              | TEXT    { $$ = PRIM_TEXT_LIST; }
+              | '[' ']' { $$ = PRIM_BLOCK; }
+              | TEXT_L  { $$ = PRIM_TEXT_LIST; }
+              | BLOCK   { $$ = PRIM_BLOCK; }
 ;
 
 optional_corner: DOT_N      { $$ = 1; }

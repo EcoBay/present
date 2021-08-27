@@ -42,6 +42,9 @@ void expand_macro();
 "define"    { BEGIN MACRO_DEF; return DEFINE; }
 "reset"     { return RESET; }
 "print"     { return PRINT; }
+"last"      { return LAST; }
+"block"     { return BLOCK; }
+"text"      { return TEXT_L; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
@@ -199,10 +202,6 @@ void expand_macro();
                 abort();
             }
 
-([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
-                yylval.d = strtof(yytext, NULL);
-                return NUMBER;
-            }
 <MACRO_DEF>"X"[^X]*"X"      |
 <MACRO_DEF>"%"[^%]*"%"      |
 <MACRO_DEF>"["[^\]]*"]"     |
@@ -211,6 +210,15 @@ void expand_macro();
                 yylval.s = strdup(yytext + 1);
                 BEGIN INITIAL;
                 return TEMPLATE;
+            }
+([0-9]*[.])?[0-9]+([eE][-+]?[0-9]+)? {
+                yylval.d = strtof(yytext, NULL);
+                return NUMBER;
+            }
+[0-9]*(1st|2nd|3rd|[0-9]th) {
+                yytext[yyleng - 2] = '\0';
+                yylval.i = atoi(yytext);
+                return ORDINAL;
             }
 \"([^\\\"]|\\.)*\"  {
                 yytext[yyleng - 1] = '\0';

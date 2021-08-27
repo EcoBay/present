@@ -25,16 +25,26 @@ struct symbol {
     union T val;
 };
 
+struct eventList {
+    struct eventList *next;
+    struct eventList *prev;
+    struct event* e;
+};
+
 struct symTable {
     struct symTable *next;
     struct symbol *table[HASH_SIZE];
+    struct eventList *list[NUM_PRIM_TYPE];
 };
 
 struct symbol* lookup(char*);
-struct symbol* lookup_0(char*);
 void setSym(char*, enum symType, union T);
 int resetSym(char*);
 void clearSym();
+
+void addPrim(enum primitiveType, struct event*);
+struct event* getPrim(enum primitiveType, int);
+struct event* getPrim_r(enum primitiveType, int);
 
 void pushTable();
 struct symTable* switchTable(struct symTable *tb);
