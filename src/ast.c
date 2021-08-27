@@ -64,6 +64,19 @@ struct _ast_ord {
     int r;
 };
 
+struct _ast_loc {
+    int t;
+    struct ast *a;
+    int corner;
+};
+
+struct _ast_vbet {
+    int t;
+    struct ast *p;
+    struct ast *s;
+    struct ast *e;
+};
+
 struct _ast_term {
     int t;
     union ast_type val;
@@ -178,33 +191,33 @@ astNum(float d) {
 
 struct ast*
 astLoc(struct ast* e, int corner) {
-    struct ast *a = malloc(sizeof(struct ast));
-    a -> t = 0;
+    struct _ast_loc *a = malloc(sizeof(struct _ast_loc));
+    a -> t = AST_LOC;
+    a -> a = e;
+    a -> corner = corner;
 
-    a -> l = malloc(sizeof(struct ast));
-    a -> l -> t = 1;
-    a -> l -> l = e;
-    a -> l -> r = astInt(corner);
-
-    a -> r = malloc(sizeof(struct ast));
-    a -> r -> t = 2;
-    a -> r -> l = e;
-    a -> r -> r = astInt(corner);
-
-    return a;
+    return (struct ast*) a;
 }
 
 struct ast*
 astHere() {
     struct ast *a = malloc(sizeof(struct ast));
-    a -> t = 0;
+    a -> t = AST_HERE;
+    a -> l = NULL;
+    a -> r = NULL;
 
-    a -> l = malloc(sizeof(struct ast));
-    a -> l -> t = 3;
-
-    a -> r = malloc(sizeof(struct ast));
-    a -> r -> t = 4;
     return a;
+}
+
+struct ast*
+astVBet(struct ast *p, struct ast *s, struct ast *e) {
+    struct _ast_vbet *a = malloc(sizeof(struct _ast_vbet));
+    a -> t = AST_VBET;
+    a -> p = p;
+    a -> s = s;
+    a -> e = e;
+
+    return (struct ast*) a;
 }
 
 struct ast*
@@ -466,9 +479,12 @@ evalAttr(struct _ast_attr *a) {
         case ATTR_BY:
             if (p -> t > 3 && p -> t < 8) {
                 struct location *l;
+                struct vec2d *v = eval(a -> val).v;
+
                 l = getLastSegment(p);
-                l -> x += eval(a -> val -> l).d;
-                l -> y += eval(a -> val -> r).d;
+                l -> x += v -> x;
+                l -> y += v -> y;
+                free(v);
 
                 p -> flags |= 1;
             }
@@ -581,16 +597,21 @@ evalAttr(struct _ast_attr *a) {
             break;
         case ATTR_FROM:
             {
-                p -> start.x = eval(a -> val -> l).d;
-                p -> start.y = eval(a -> val -> r).d;
+                struct vec2d *v = eval(a -> val).v;
+                p -> start.x = v -> x;
+                p -> start.y = v -> y;
+                free(v);
             }
             break;
         case ATTR_TO:
             if (p -> t > 2 && p -> t < 8) {
                 struct location *l;
                 l = getLastSegment(p);
-                l -> x = eval(a -> val -> l).d;
-                l -> y = eval(a -> val -> r).d;
+                struct vec2d *v = eval(a -> val).v;
+
+                l -> x = v -> x;
+                l -> y = v -> y;
+                free(v);
 
                 p -> flags |= 1;
             }
@@ -618,8 +639,10 @@ evalAttr(struct _ast_attr *a) {
                     p -> at = malloc(sizeof(struct vec2d));
                 }
 
-                p -> at -> x = eval(a -> val -> l).d;
-                p -> at -> y = eval(a -> val -> r).d;
+                struct vec2d *v = eval(a -> val).v;
+                p -> at -> x = v -> x;
+                p -> at -> y = v -> y;
+                free(v);
             }
             break;
     }
@@ -638,40 +661,6 @@ eval(struct ast *a, ...) {
 
     switch (a -> t) {
         /* expresions */
-        case 1:
-            {
-                struct vec2d *e = malloc(sizeof(struct vec2d));
-                struct primitive *p = eval(a -> l).e -> a.pr;
-                getLoc(p, e, eval(a -> r).i);
-                ret.d = e -> x;
-                free(e);
-            }
-            break;
-        case 2:
-            {
-                struct vec2d *e = malloc(sizeof(struct vec2d));
-                struct primitive *p = eval(a -> l).e -> a.pr;
-                getLoc(p, e, eval(a -> r).i);
-                ret.d = e -> y;
-                free(e);
-            }
-            break;
-        case 3:
-            {
-                struct vec2d *e = malloc(sizeof(struct vec2d));
-                getCursor(e);
-                ret.d = e -> x;
-                free(e);
-            }
-            break;
-        case 4:
-            {
-                struct vec2d *e = malloc(sizeof(struct vec2d));
-                getCursor(e);
-                ret.d = e -> y;
-                free(e);
-            }
-            break;
         case AST_NUM:
             {
                 ret.d = ((struct _ast_term*) a) -> val.d;
@@ -828,6 +817,86 @@ eval(struct ast *a, ...) {
             }
             break;
 
+        /* position */
+        case AST_LOC:
+            {
+                struct _ast_loc *t = (struct _ast_loc*) a;
+                ret.v = malloc(sizeof(struct vec2d));
+
+                struct primitive *p;
+                p = eval(t -> a).e -> a.pr;
+                getLoc(p, ret.v, t -> corner);
+            }
+            break;
+        case AST_HERE:
+            {
+                ret.v = malloc(sizeof(struct vec2d));
+                getCursor(ret.v);
+            }
+            break;
+        case AST_VEC:
+            {
+                ret.v = malloc(sizeof(struct vec2d));
+                ret.v -> x = eval(a -> l).d;
+                ret.v -> y = eval(a -> r).d;
+            }
+            break;
+        case AST_VADD:
+            {
+                ret.v = malloc(sizeof(struct vec2d));
+                struct vec2d *l, *r;
+                l = eval(a -> l).v;
+                r = eval(a -> r).v;
+                
+                ret.v -> x = l -> x + r -> x;
+                ret.v -> y = l -> y + r -> y;
+                free(l);
+                free(r);
+            }
+            break;
+        case AST_VSUB:
+            {
+                ret.v = malloc(sizeof(struct vec2d));
+                struct vec2d *l, *r;
+                l = eval(a -> l).v;
+                r = eval(a -> r).v;
+                
+                ret.v -> x = l -> x - r -> x;
+                ret.v -> y = l -> y - r -> y;
+                free(l);
+                free(r);
+            }
+            break;
+        case AST_VSEP:
+            {
+                ret.v = malloc(sizeof(struct vec2d));
+                struct vec2d *l, *r;
+                l = eval(a -> l).v;
+                r = eval(a -> r).v;
+                
+                ret.v -> x = l -> x;
+                ret.v -> y = r -> y;
+                free(l);
+                free(r);
+            }
+            break;
+        case AST_VBET:
+            {
+                struct _ast_vbet* t = (struct _ast_vbet*) a;
+                float p = eval(t -> p).d;
+                struct vec2d *s, *e;
+                s = eval(t -> s).v;
+                e = eval(t -> e).v;
+
+                ret.v = malloc(sizeof(struct vec2d));
+                ret.v -> x = (1.0 - p) * s -> x + p * e -> x;
+                ret.v -> y = (1.0 - p) * s -> y + p * e -> y;
+
+                free(s);
+                free(e);
+            }
+            break;
+
         case AST_STMT:
             {
                 eval(a -> l);
@@ -932,7 +1001,12 @@ eval(struct ast *a, ...) {
             break;
         case AST_LBL:
             {
-                s = lookup(((struct _ast_term*) a) -> val.s);
+                char *sym = ((struct _ast_term*) a) -> val.s;
+                if (!(s = lookup(sym))) {
+                    fprintf(stderr, "Error: label \"%s\" "
+                            "not found\n", sym);
+                    abort();
+                }
                 ret.e = s -> val.e;
             }
             break;
@@ -1003,8 +1077,6 @@ void freeTree (struct ast* a) {
     if (!a) return;
 
     switch (a -> t) {
-        case 0:
-        case 1:
         case '+':
         case '-':
         case '*':
@@ -1029,16 +1101,15 @@ void freeTree (struct ast* a) {
         case AST_DRAW:
         case AST_PRN:
         case AST_TBL:
+        case AST_VEC:
+        case AST_VADD:
+        case AST_VSUB:
+        case AST_VSEP:
             freeTree(a -> l);
             freeTree(a -> r);
             break;
 
-        case 2:  // may be freed twice
-            freeTree(a -> r);
-            break;
-
-        case 3:
-        case 4:
+        case AST_HERE:
         case AST_DIR:
         case AST_NUM:
         case AST_TEXT:
@@ -1101,8 +1172,22 @@ void freeTree (struct ast* a) {
                 freeTree(t -> a);
             }
             break;
+        case AST_LOC:
+            {
+                struct _ast_loc *t = (struct _ast_loc*) a;
+                freeTree(t -> a);
+            }
+            break;
+        case AST_VBET:
+            {
+                struct _ast_vbet *t = (struct _ast_vbet*) a;
+                freeTree(t -> p);
+                freeTree(t -> s);
+                freeTree(t -> e);
+            }
+            break;
 
-        default:
+        // default:
             yyerror("Internal Error: cannot free "
                     "AST with type of %d\n", a -> t);
             abort();

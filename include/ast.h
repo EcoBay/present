@@ -13,6 +13,7 @@ union ast_type {
     float d;
     struct color *c;
     struct event *e;
+    struct vec2d *v;
 };
 
 enum nodetype {
@@ -49,6 +50,15 @@ enum nodetype {
     AST_INT,
     AST_RAND,
     AST_ABS,
+
+    /* position */
+    AST_LOC,
+    AST_HERE,
+    AST_VEC,
+    AST_VADD,
+    AST_VSUB,
+    AST_VSEP,
+    AST_VBET,
 };
 
 enum attrib{
@@ -104,6 +114,7 @@ struct ast* astOp(int op, struct ast*, struct ast*);
 struct ast* astNum(float d);
 struct ast* astLoc(struct ast*, int);
 struct ast* astHere();
+struct ast* astVBet(struct ast*, struct ast*, struct ast*);
 struct ast* astInt(int i);
 struct ast* astRef(char*);
 struct ast* astTbl(struct ast*, struct ast*);

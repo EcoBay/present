@@ -233,8 +233,8 @@ primitive: BOX
             { $$ = astAttr($1, ATTR_LEFT, NULL); }
          | primitive LEFT expr
             { $$ = astAttr($1, ATTR_LEFT, $3); }
-         | primitive BY expr ',' expr
-            { $$ = astAttr($1, ATTR_BY, astOp(0, $3, $5)); }
+         | primitive BY expr_pair
+            { $$ = astAttr($1, ATTR_BY, $3); }
          | primitive FROM position
             { $$ = astAttr($1, ATTR_FROM, $3); }
          | primitive TO position
@@ -415,115 +415,23 @@ position: position_not_place
 
 position_not_place: expr_pair
                   | position '+' expr_pair
-                    {
-                        $$ = astOp(0,
-                            astOp('+', $1 -> l, $3 -> l),
-                            astOp('+', $1 -> r, $3 -> r)
-                        );
-                        free($1);
-                        free($3);
-                    }
+                    { $$ = astOp(AST_VADD, $1, $3); }
                   | '(' position '+' expr_pair ')'
-                    {
-                        $$ = astOp(0,
-                            astOp('+', $2 -> l, $4 -> l),
-                            astOp('+', $2 -> r, $4 -> r)
-                        );
-                        free($2);
-                        free($4);
-                    }
+                    { $$ = astOp(AST_VADD, $2, $4); }
                   | position '-' expr_pair
-                    {
-                        $$ = astOp(0,
-                            astOp('-', $1 -> l, $3 -> l),
-                            astOp('-', $1 -> r, $3 -> r)
-                        );
-                        free($1);
-                        free($3);
-                    }
+                    { $$ = astOp(AST_VSUB, $1, $3); }
                   | '(' position '-' expr_pair ')'
-                    {
-                        $$ = astOp(0,
-                            astOp('-', $2 -> l, $4 -> l),
-                            astOp('-', $2 -> r, $4 -> r)
-                        );
-                        free($2);
-                        free($4);
-                    }
+                    { $$ = astOp(AST_VSUB, $2, $4); }
                   | '(' position ',' position ')'
-                    {
-                        $$ = astOp(0, $2 -> l, $4 -> r);
-                        free($2);
-                        free($4);
-                    }
+                    { $$ = astOp(AST_VSEP, $2, $4); }
                   | expr BETWEEN position AND position
-                    {
-                        $$ = astOp(0, NULL, NULL);
-                        $$ -> l = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $1),
-                                $3 -> l),
-                            astOp('*', $1, $5 -> l));
-                        $$ -> r = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $1),
-                                $3 -> r),
-                            astOp('*', $1, $5 -> r));
-
-                        free($3);
-                        free($5);
-                    }
+                    { $$ = astVBet($1, $3, $5); }
                   | '(' expr BETWEEN position AND position ')'
-                    {
-                        $$ = astOp(0, NULL, NULL);
-                        $$ -> l = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $2),
-                                $4 -> l),
-                            astOp('*', $2, $6 -> l));
-                        $$ -> r = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $2),
-                                $4 -> r),
-                            astOp('*', $2, $6 -> r));
-
-                        free($4);
-                        free($6);
-                    }
+                    { $$ = astVBet($2, $4, $6); }
                   | expr '<' position ',' position '>'
-                    {
-                        $$ = astOp(0, NULL, NULL);
-                        $$ -> l = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $1),
-                                $3 -> l),
-                            astOp('*', $1, $5 -> l));
-                        $$ -> r = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $1),
-                                $3 -> r),
-                            astOp('*', $1, $5 -> r));
-
-                        free($3);
-                        free($5);
-                    }
+                    { $$ = astVBet($1, $3, $5); }
                   | '(' expr '<' position ',' position '>' ')'
-                    {
-                        $$ = astOp(0, NULL, NULL);
-                        $$ -> l = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $2),
-                                $4 -> l),
-                            astOp('*', $2, $6 -> l));
-                        $$ -> r = astOp('+',
-                            astOp('*',
-                                astOp('-', astNum(1.0), $2),
-                                $4 -> r),
-                            astOp('*', $2, $6 -> r));
-
-                        free($4);
-                        free($6);
-                    }
+                    { $$ = astVBet($2, $4, $6); }
 ;
 
 reset: RESET            { $$ = astRst(NULL); }
@@ -556,7 +464,7 @@ iden_list: IDENTIFIER
             }
 ;
 
-expr_pair: expr ',' expr        { $$ = astOp(0, $1, $3); }
+expr_pair: expr ',' expr        { $$ = astOp(AST_VEC, $1, $3); }
          | '(' expr_pair ')'    { $$ = $2; }
 ;
 
