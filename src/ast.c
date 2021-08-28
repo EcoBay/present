@@ -22,6 +22,13 @@ struct _ast_for {
     struct ast *body;
 };
 
+struct _ast_if {
+    int t;
+    struct ast* cond;
+    struct ast* succ;
+    struct ast* fail;
+};
+
 struct _ast_attr {
     int t;
     enum attrib attr;
@@ -141,6 +148,17 @@ astRpt(struct ast *l, struct ast *r) {
     a -> r = r;
 
     return a;
+}
+
+struct ast*
+astIf(struct ast *cond, struct ast *succ, struct ast *fail) {
+    struct _ast_if *a = malloc(sizeof(struct _ast_if));
+    a -> t = AST_IF;
+    a -> cond = cond;
+    a -> succ = succ;
+    a -> fail = fail;
+
+    return (struct ast*) a;
 }
 
 struct ast*
@@ -760,11 +778,6 @@ eval(struct ast *a, ...) {
                 }
             }
             break;
-        case '!':
-            {
-                ret.d = (eval(a -> l).d == 0.0);
-            }
-            break;
         case AST_UNM:
             {
                 ret.d = - eval(a -> l).d;
@@ -857,6 +870,63 @@ eval(struct ast *a, ...) {
         case AST_ABS:
             {
                 ret.d = fabsf(eval(a -> l).d);
+            }
+            break;
+
+        /* condition */
+        case '!':
+            {
+                ret.i = (eval(a -> l).d == 0.0);
+            }
+            break;
+        case '<':
+            {
+                ret.i = eval(a -> l).d < eval(a -> r).d;
+            }
+            break;
+        case '>':
+            {
+                ret.i = eval(a -> l).d > eval(a -> r).d;
+            }
+            break;
+        case AST_EE:
+            {
+                ret.i = eval(a -> l).d == eval(a -> r).d;
+            }
+            break;
+        case AST_NE:
+            {
+                ret.i = eval(a -> l).d != eval(a -> r).d;
+            }
+            break;
+        case AST_LE:
+            {
+                ret.i = eval(a -> l).d <= eval(a -> r).d;
+            }
+            break;
+        case AST_GE:
+            {
+                ret.i = eval(a -> l).d >= eval(a -> r).d;
+            }
+            break;
+        case AST_OR:
+            {
+                ret.i = eval(a -> l).i || eval(a -> r).i;
+            }
+            break;
+        case AST_AND:
+            {
+                ret.i = eval(a -> l).i && eval(a -> r).i;
+            }
+            break;
+        case AST_XOR:
+            {
+                ret.i = !eval(a -> l).i != !eval(a -> r).i;
+            }
+            break;
+        case AST_SAME:
+            {
+                ret.i = !eval(a -> l).i == !eval(a -> r).i;
             }
             break;
 
@@ -1004,6 +1074,16 @@ eval(struct ast *a, ...) {
         case AST_RPT:
             for (int i = 0; i < eval(a -> l).d; i++) {
                 eval(a -> r);
+            }
+            break;
+        case AST_IF:
+            {
+                struct _ast_if *t = (struct _ast_if*) a;
+                if (eval(t -> cond).i) {
+                    eval(t -> succ);
+                } else {
+                    eval(t -> fail);
+                }
             }
             break;
         case AST_PRIM:
@@ -1175,7 +1255,6 @@ void freeTree (struct ast* a) {
         case '/':
         case '%':
         case '^':
-        case '!':
         case AST_UNM:
         case AST_SIN:
         case AST_COS:
@@ -1188,6 +1267,17 @@ void freeTree (struct ast* a) {
         case AST_INT:
         case AST_RAND:
         case AST_ABS:
+        case '!':
+        case '<':
+        case '>':
+        case AST_EE:
+        case AST_NE:
+        case AST_LE:
+        case AST_GE:
+        case AST_OR:
+        case AST_AND:
+        case AST_XOR:
+        case AST_SAME:
         case AST_STMT:
         case AST_GRP:
         case AST_RPT:

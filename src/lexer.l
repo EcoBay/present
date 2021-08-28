@@ -48,6 +48,8 @@ void expand_macro();
 "do"        { return DO; }
 [xX]        |
 "times"     { return TIMES; }
+"if"        { return IF; }
+"else"      { return ELSE; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }
@@ -136,6 +138,13 @@ void expand_macro();
 "milliseconds"  { return MILLISECONDS; }
 "m"         |
 "minute"s?  { return MINUTES; }
+
+"=="        { return EE; }
+"!="        { return NE; }
+">="        { return GE; }
+"<="        { return LE; }
+"||"        { return OROR; }
+"&&"        { return ANDAND; }
 
 [a-z][a-zA-Z0-9_]*  {
                 struct symbol *s;
@@ -248,6 +257,8 @@ void expand_macro();
 "/"         |
 "%"         |
 "!"         |
+"<"         |
+">"         |
 "^"         |
 "("         |
 ")"         |

@@ -33,7 +33,10 @@ struct _t {
 
 /* keywords */
 %token FOR OF HERE AND BETWEEN DEFINE RESET PRINT
-%token LAST TEXT_L BLOCK DO TIMES
+%token LAST TEXT_L BLOCK DO TIMES IF ELSE
+
+/* symbols */
+%token EE NE LE GE OROR ANDAND
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -72,7 +75,7 @@ u
 %token EOL
 
 %type <a> program statement element present label nth_prim
-%type <a> keyframe_stmt direction_stmt element_list by
+%type <a> keyframe_stmt direction_stmt element_list by condition
 %type <a> primitive expr duration color position place
 %type <a> position_not_place expr_pair reset prim_labels
 %type <i> positioning easing corner optional_corner primitive_type
@@ -91,6 +94,11 @@ u
 
 %left HT WID RAD DIAM FROM TO AT
 %left ','
+
+%left OROR
+%left ANDAND
+%left EE NE
+%left '<' '>' LE GE
 
 %left BETWEEN OF
 %left AND
@@ -143,6 +151,10 @@ element: primitive
             }
        | FOR IDENTIFIER '=' expr TO expr by DO '{' element_list '}'
             { $$ = astFor($2, $4, $6, $7, $10); }
+       | IF condition THEN '{' element_list '}'
+            { $$ = astIf($2, $5, NULL); }
+       | IF condition THEN '{' element_list '}' ELSE '{' element_list '}'
+            { $$ = astIf($2, $5, $9); }
 ;
 
 by: %empty
@@ -335,6 +347,32 @@ positioning: %empty
             }
 ;
 
+condition: '!' expr
+            { $$ = astOp('!', $2, NULL); }
+         | expr '<' expr
+            { $$ = astOp('<', $1, $3); }
+         | expr '>' expr
+            { $$ = astOp('>', $1, $3); }
+         | expr EE expr
+            { $$ = astOp(AST_EE, $1, $3); }
+         | expr NE expr
+            { $$ = astOp(AST_NE, $1, $3); }
+         | expr LE expr
+            { $$ = astOp(AST_LE, $1, $3); }
+         | expr GE expr
+            { $$ = astOp(AST_GE, $1, $3); }
+         | '(' condition ')'
+            { $$ = $2; }
+         | condition OROR condition
+            { $$ = astOp(AST_OR, $1, $3); }
+         | condition ANDAND condition
+            { $$ = astOp(AST_AND, $1, $3); }
+         | condition NE condition
+            { $$ = astOp(AST_XOR, $1, $3); }
+         | condition EE condition
+            { $$ = astOp(AST_SAME, $1, $3); }
+;
+
 expr: NUMBER
         { $$ = astNum($1); }
     | IDENTIFIER
@@ -377,8 +415,6 @@ expr: NUMBER
         { $$ = astOp(AST_RAND, NULL, NULL); }
     | ABS '(' expr ')'
         { $$ = astOp(AST_ABS , $3, NULL); }
-    | '!' expr
-        { $$ = astOp('!', $2, NULL); }
 ;
 
 color: HEXCOLOR

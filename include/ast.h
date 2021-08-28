@@ -22,6 +22,7 @@ enum nodetype {
     AST_FOR,
     AST_BY,
     AST_RPT,
+    AST_IF,
     AST_PRIM,
     AST_ATTR,
     AST_TL,
@@ -53,6 +54,16 @@ enum nodetype {
     AST_INT,
     AST_RAND,
     AST_ABS,
+
+    /* condition */
+    AST_EE,
+    AST_NE,
+    AST_LE,
+    AST_GE,
+    AST_OR,
+    AST_AND,
+    AST_XOR,
+    AST_SAME,
 
     /* position */
     AST_LOC,
@@ -108,6 +119,7 @@ struct ast* astGrp(struct ast*);
 struct ast* astFor(char *, struct ast*, struct ast*, struct ast*, struct ast*);
 struct ast* astBy(struct ast*, int);
 struct ast* astRpt(struct ast*, struct ast*);
+struct ast* astIf(struct ast*, struct ast*, struct ast*);
 struct ast* astPrim(enum primitiveType);
 struct ast* astAttr(struct ast*, enum attrib, struct ast*);
 struct ast* astTL(struct ast*, int);
