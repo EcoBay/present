@@ -991,7 +991,10 @@ eval(struct ast *a, ...) {
         case AST_TBL:
             {
                 struct symTable *tb;
-                tb =  eval(a -> l).e -> a.pr -> tb;
+                if (!(tb =  eval(a -> l).e -> a.pr -> tb)) {
+                    fprintf(stderr, "Error: primitive is not a block\n");
+                    abort();
+                }
                 tb = switchTable(tb);
 
                 ret.e = eval(a -> r).e;

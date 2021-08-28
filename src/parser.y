@@ -472,15 +472,13 @@ place: label optional_corner        { $$ = astLoc($1, $2); }
      | label                        { $$ = astLoc($1, 15); }
      | corner OF label              { $$ = astLoc($3, $1); }
      | optional_corner OF label     { $$ = astLoc($3, $1); }
-     | nth_prim optional_corner     { $$ = astLoc($1 ,$2); }
-     | nth_prim                     { $$ = astLoc($1, 15); }
-     | corner OF nth_prim           { $$ = astLoc($3, $1); }
-     | optional_corner OF nth_prim  { $$ = astLoc($3, $1); }
      | HERE                         { $$ = astHere(); }
 ;
 
-label: LABEL            { $$ = astLbl($1); }
-     | label '.' LABEL  { $$ = astTbl($1, astLbl($3)); }
+label: LABEL                { $$ = astLbl($1); }
+     | nth_prim             { $$ = $1; }
+     | label '.' LABEL      { $$ = astTbl($1, astLbl($3)); }
+     | label '.' nth_prim   { $$ = astTbl($1, $3); }
 ;
 
 nth_prim: ORDINAL primitive_type        { $$ = astOrd($1, $2, 0); }
