@@ -175,33 +175,77 @@ chopBoundingBox(struct primitive *p){
 static void
 chopLine(struct primitive *p) {
     // TODO: Allow for chopping arc (not part of standard pic)
-    if (p -> t < 4 || p -> t > 7) return;
-
-    struct vec2d l0 = { p -> start.x, p -> start.y };
-    struct location *l = p -> segments;
-
+    if (p -> t == PRIM_ARC) {
 #define SQ(a) ((a) * (a))
-    float C = sqrt(SQ(l0.x - l -> x)
-            + SQ(l0.y - l -> y));
-    float q = p -> chop1 / C;
+        float cw = (p -> flags & 2) ? -1 : 1;
+        float r = p -> rad;
 
-    p -> start.x += (l -> x - l0.x) * q;
-    p -> start.y += (l -> y - l0.y) * q;
+        {
+            float c = p -> chop1;
+            if (c >= 2 * r) {
+                fprintf(stderr, "Error: chop value of %.3g "
+                        "exceeds diameter of arc which is %.3g\n",
+                        c, 2 * r);
+                abort();
+            }
+            float a = (SQ(r) - SQ(c)) / (2 * SQ(r));
+            float b = c * sqrtf(4 * SQ(r) - SQ(c)) / (2 * SQ(r));
 
-    while (l -> next) {
-        l0.x = l -> x;
-        l0.y = l -> y;
-        l = l -> next;
-    }
+            float x0 = p -> c.x;
+            float x1 = p -> start.x;
+            float y0 = p -> c.y;
+            float y1 = p -> start.y;
 
-    C = sqrt(SQ(l0.x - l -> x)
-      + SQ(l0.y - l -> y));
-    q = p -> chop2 / C;
+            p -> start.x = 0.5*(x0+x1) + a*(x1-x0) - b*(y1-y0) * cw;
+            p -> start.y = 0.5*(y0+y1) + a*(y1-y0) - b*(x0-x1) * cw;
+        }
 
-    l -> x -= (l -> x - l0.x) * q;
-    l -> y -= (l -> y - l0.y) * q;
+        {
+            float c = p -> chop2;
+            if (c >= p -> rad) {
+                fprintf(stderr, "Error: chop value of %.3g "
+                        "exceeds radius of arc which is %.3g\n",
+                        c, r);
+                abort();
+            }
+            float a = (SQ(r) - SQ(c)) / (2 * SQ(r));
+            float b = c * sqrtf(4 * SQ(r) - SQ(c)) / (2 * SQ(r));
+
+            float x0 = p -> c.x;
+            float x1 = p -> end.x;
+            float y0 = p -> c.y;
+            float y1 = p -> end.y;
+
+            p -> end.x = 0.5*(x0+x1) + a*(x1-x0) + b*(y1-y0) * cw;
+            p -> end.y = 0.5*(y0+y1) + a*(y1-y0) + b*(x0-x1) * cw;
+        }
+
+
+    } else if (p -> t > 3 && p -> t < 8) {
+        struct vec2d l0 = { p -> start.x, p -> start.y };
+        struct location *l = p -> segments;
+
+        float C = sqrtf(SQ(l0.x - l -> x)
+                + SQ(l0.y - l -> y));
+        float q = p -> chop1 / C;
+
+        p -> start.x += (l -> x - l0.x) * q;
+        p -> start.y += (l -> y - l0.y) * q;
+
+        while (l -> next) {
+            l0.x = l -> x;
+            l0.y = l -> y;
+            l = l -> next;
+        }
+
+        C = sqrtf(SQ(l0.x - l -> x)
+          + SQ(l0.y - l -> y));
+        q = p -> chop2 / C;
+
+        l -> x -= (l -> x - l0.x) * q;
+        l -> y -= (l -> y - l0.y) * q;
 #undef SQ
-
+    }
 }
 
 static void

@@ -660,7 +660,7 @@ evalAttr(struct _ast_attr *a) {
             }
             break;
         case ATTR_CHOP:
-            if (p -> t > 3 && p -> t < 8) {
+            if (p -> t > 2 && p -> t < 8) {
                 float cd = a -> val ? eval(a -> val).d
                     : lookup("circlerad") -> val.d;
                 if (p -> flags & 128) {
