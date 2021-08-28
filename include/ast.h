@@ -19,6 +19,9 @@ union ast_type {
 enum nodetype {
     AST_STMT = 256,
     AST_GRP,
+    AST_FOR,
+    AST_BY,
+    AST_RPT,
     AST_PRIM,
     AST_ATTR,
     AST_TL,
@@ -102,6 +105,9 @@ void freeTree(struct ast*);
 
 struct ast* astStmt(struct ast*, struct ast*);
 struct ast* astGrp(struct ast*);
+struct ast* astFor(char *, struct ast*, struct ast*, struct ast*, struct ast*);
+struct ast* astBy(struct ast*, int);
+struct ast* astRpt(struct ast*, struct ast*);
 struct ast* astPrim(enum primitiveType);
 struct ast* astAttr(struct ast*, enum attrib, struct ast*);
 struct ast* astTL(struct ast*, int);

@@ -13,6 +13,15 @@ struct _ast_prim {
     enum primitiveType pt;
 };
 
+struct _ast_for {
+    int t;
+    char *var;
+    struct ast *init;
+    struct ast *term;
+    struct ast *inc;
+    struct ast *body;
+};
+
 struct _ast_attr {
     int t;
     enum attrib attr;
@@ -64,10 +73,10 @@ struct _ast_ord {
     int r;
 };
 
-struct _ast_loc {
+struct _ast_ai {
     int t;
     struct ast *a;
-    int corner;
+    int i;
 };
 
 struct _ast_vbet {
@@ -97,6 +106,40 @@ astGrp(struct ast *l) {
     a -> t = AST_GRP;
     a -> l = l;
     a -> r = NULL;
+    return a;
+}
+
+struct ast*
+astFor(char *s, struct ast *init, struct ast *term,
+struct ast *inc, struct ast *body) {
+    struct _ast_for *a = malloc(sizeof(struct _ast_for));
+    a -> t = AST_FOR;
+    a -> var = s;
+    a -> init = init;
+    a -> term = term;
+    a -> inc = inc;
+    a -> body = body;
+
+    return (struct ast*) a;
+}
+
+struct ast*
+astBy(struct ast *i, int multiplicative) {
+    struct _ast_ai *a = malloc(sizeof(struct _ast_ai));
+    a -> t = AST_BY; 
+    a -> a = i;
+    a -> i = multiplicative;
+
+    return (struct ast*) a;
+}
+
+struct ast*
+astRpt(struct ast *l, struct ast *r) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = AST_RPT;
+    a -> l = l;
+    a -> r = r;
+
     return a;
 }
 
@@ -191,10 +234,10 @@ astNum(float d) {
 
 struct ast*
 astLoc(struct ast* e, int corner) {
-    struct _ast_loc *a = malloc(sizeof(struct _ast_loc));
+    struct _ast_ai *a = malloc(sizeof(struct _ast_ai));
     a -> t = AST_LOC;
     a -> a = e;
-    a -> corner = corner;
+    a -> i = corner;
 
     return (struct ast*) a;
 }
@@ -820,12 +863,12 @@ eval(struct ast *a, ...) {
         /* position */
         case AST_LOC:
             {
-                struct _ast_loc *t = (struct _ast_loc*) a;
+                struct _ast_ai *t = (struct _ast_ai*) a;
                 ret.v = malloc(sizeof(struct vec2d));
 
                 struct primitive *p;
                 p = eval(t -> a).e -> a.pr;
-                getLoc(p, ret.v, t -> corner);
+                getLoc(p, ret.v, t -> i);
             }
             break;
         case AST_HERE:
@@ -915,6 +958,52 @@ eval(struct ast *a, ...) {
                 freeTable(popTable());
                 setDirection(dir);
                 setCursor(&c);
+            }
+            break;
+        case AST_FOR:
+            {
+                struct _ast_for *t = (struct _ast_for*) a;
+                struct symbol *s = lookup(t -> var);
+                union T prev_val;
+
+                if (s) {
+                    prev_val.d = s -> val.d;
+                }
+
+                float i = eval(t -> init).d;
+                float term = eval(t -> term).d;
+
+                while (i <= term) {
+                    setSym(t -> var, SYM_DOUBLE, (union T) {.d = i});
+                    eval(t -> body);
+                    i = eval(t -> inc, (double) i).d;
+                }
+
+                if (s) {
+                    setSym(t -> var, SYM_DOUBLE, prev_val);
+                }
+            }
+            break;
+        case AST_BY:
+            {
+                struct _ast_ai *t = (struct _ast_ai*) a;
+                if (t -> i) {
+                    float f = va_arg(args, double);
+                    if (f) {
+                        ret.d = f * eval(t -> a).d;
+                    } else {
+                        fprintf(stderr, "Error: multiplicative loop initial "
+                                "value is 0 so causing it to not terminate\n");
+                        abort();
+                    }
+                } else {
+                    ret.d = va_arg(args, double) + eval(t -> a).d;
+                }
+            }
+            break;
+        case AST_RPT:
+            for (int i = 0; i < eval(a -> l).d; i++) {
+                eval(a -> r);
             }
             break;
         case AST_PRIM:
@@ -1060,7 +1149,7 @@ eval(struct ast *a, ...) {
             break;
         case AST_PRN:
             {
-                printf("%g\n", eval(a -> l).d);
+                fprintf(stderr, "%g\n", eval(a -> l).d);
             }
             break;
 
@@ -1101,6 +1190,7 @@ void freeTree (struct ast* a) {
         case AST_ABS:
         case AST_STMT:
         case AST_GRP:
+        case AST_RPT:
         case AST_DRAW:
         case AST_PRN:
         case AST_TBL:
@@ -1175,9 +1265,10 @@ void freeTree (struct ast* a) {
                 freeTree(t -> a);
             }
             break;
+        case AST_BY:
         case AST_LOC:
             {
-                struct _ast_loc *t = (struct _ast_loc*) a;
+                struct _ast_ai *t = (struct _ast_ai*) a;
                 freeTree(t -> a);
             }
             break;
@@ -1187,6 +1278,15 @@ void freeTree (struct ast* a) {
                 freeTree(t -> p);
                 freeTree(t -> s);
                 freeTree(t -> e);
+            }
+            break;
+        case AST_FOR:
+            {
+                struct _ast_for *t = (struct _ast_for*) a;
+                freeTree(t -> init);
+                freeTree(t -> term);
+                freeTree(t -> inc);
+                freeTree(t -> body);
             }
             break;
 

@@ -45,6 +45,9 @@ void expand_macro();
 "last"      { return LAST; }
 "block"     { return BLOCK; }
 "text"      { return TEXT_L; }
+"do"        { return DO; }
+[xX]        |
+"times"     { return TIMES; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }

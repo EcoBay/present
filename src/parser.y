@@ -33,7 +33,7 @@ struct _t {
 
 /* keywords */
 %token FOR OF HERE AND BETWEEN DEFINE RESET PRINT
-%token LAST TEXT_L BLOCK
+%token LAST TEXT_L BLOCK DO TIMES
 
 /* directions */
 %token UP DOWN LEFT RIGHT
@@ -72,7 +72,7 @@ u
 %token EOL
 
 %type <a> program statement element present label nth_prim
-%type <a> keyframe_stmt direction_stmt element_list
+%type <a> keyframe_stmt direction_stmt element_list by
 %type <a> primitive expr duration color position place
 %type <a> position_not_place expr_pair reset prim_labels
 %type <i> positioning easing corner optional_corner primitive_type
@@ -141,6 +141,16 @@ element: primitive
                 setSym($2, SYM_MACRO, v);
                 free($2);
             }
+       | FOR IDENTIFIER '=' expr TO expr by DO '{' element_list '}'
+            { $$ = astFor($2, $4, $6, $7, $10); }
+;
+
+by: %empty
+    { $$ = astBy(astNum(1), 0); }
+  | BY expr
+    { $$ = astBy($2, 0); }
+  | BY '*' expr
+    { $$ = astBy($3, 1); }
 ;
 
 prim_labels: LABEL ':' primitive
@@ -160,6 +170,7 @@ element_list: %empty                    { $$ = NULL; }
 ;
 
 present: keyframe_stmt                      { $$ = $1; }
+       | FOR expr TIMES DO '{' program '}'  { $$ = astRpt($2, $6); }
 ;
 
 keyframe_stmt: easing KEYFRAME              { $$ = astKF(NULL, $1); }
