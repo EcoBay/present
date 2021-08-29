@@ -50,6 +50,7 @@ void expand_macro();
 "times"     { return TIMES; }
 "if"        { return IF; }
 "else"      { return ELSE; }
+"sprintf"   { return SPRINTF; }
 
 "up"        { return UP; }
 "down"      { return DOWN; }

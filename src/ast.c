@@ -59,6 +59,12 @@ struct _ast_tl {
     int p;
 };
 
+struct _ast_spn {
+    int t;
+    struct ast* s;
+    struct astList *al;
+};
+
 struct _ast_rgba {
     int t;
     struct ast* r;
@@ -204,6 +210,15 @@ astText(char *s){
     struct _ast_term *a = malloc(sizeof(struct _ast_term));
     a -> t = AST_TEXT;
     a -> val.s = s;
+    return (struct ast*) a;
+}
+
+struct ast*
+astSpn(struct ast *s, struct astList *al)  {
+    struct _ast_spn *a = malloc(sizeof(struct _ast_spn));
+    a -> t = AST_SPN;
+    a -> s = s;
+    a -> al = al;
     return (struct ast*) a;
 }
 
@@ -1129,6 +1144,54 @@ eval(struct ast *a, ...) {
                 ret.s = ((struct _ast_term*) a) -> val.s;
             }
             break;
+        case AST_SPN:
+            {
+                struct _ast_spn *t = (struct _ast_spn *) a;
+                ret.s = malloc(256);
+                char *res = ret.s;
+                char *form = eval(t -> s).s;
+                struct astList *al = t -> al;
+                int i = 0;
+
+                // TODO: Stop at overflow
+                while (*form) {
+                    if (*form == '\\') {
+                        *res++ = *form++;
+                        *res++ = *form++;
+                    } else if (*form == '%') {
+                        char specifier[16];
+                        char *s = specifier;
+                        *s++ = *form++;
+                        for (; *form &&
+                                strchr("#-+ 0123456789.", *form);){
+                            *s++ = *form++;
+                        }
+                        if (*form == '\0' ||
+                                strchr("eEfFgG", *form) == 0) {
+                            fprintf(stderr, "Error: bad sprintf "
+                                    "format\n");
+                            abort();
+                        }
+                        char buf[64];
+                        if (i >= al -> nm) {
+                            fprintf(stderr, "Error: few arguments to "
+                                    "sprintf\n");
+                            abort();
+                        }
+                        *s++ = *form++;
+                        *s = '\0';
+                        snprintf(buf, sizeof(buf), specifier,
+                                eval(al -> l[i++]).d);
+                        strcpy(res, buf);
+                        res += strlen(buf);
+                    } else {
+                        *res++ = *form++;
+                    }
+                }
+                *res = '\0';
+                free(eval(t -> s).s);
+            }
+            break;
         case AST_INTL:
             {
                 ret.i = ((struct _ast_term*) a) -> val.i;
@@ -1377,6 +1440,16 @@ void freeTree (struct ast* a) {
                 freeTree(t -> term);
                 freeTree(t -> inc);
                 freeTree(t -> body);
+            }
+            break;
+        case AST_SPN:
+            {
+                struct _ast_spn *t = (struct _ast_spn*) a;
+                freeTree(t -> s);
+                for (int i = 0; i < t -> al -> nm; i++) {
+                    freeTree(t -> al -> l[i]);
+                }
+                free(t -> al);
             }
             break;
 

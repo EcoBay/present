@@ -3,6 +3,7 @@
 #include "present.h"
 #include "symtable.h"
 #include <math.h>
+#include <stdlib.h>
 
 struct _text_list {
     struct _text_list *next;
@@ -22,6 +23,7 @@ struct _t {
 
 %union {
     struct ast *a;
+    struct astList *al;
     char *s;
     int i;
     float d;
@@ -33,7 +35,7 @@ struct _t {
 
 /* keywords */
 %token FOR OF HERE AND BETWEEN DEFINE RESET PRINT
-%token LAST TEXT_L BLOCK DO TIMES IF ELSE
+%token LAST TEXT_L BLOCK DO TIMES IF ELSE SPRINTF
 
 /* symbols */
 %token EE NE LE GE OROR ANDAND
@@ -49,7 +51,6 @@ struct _t {
 /* attributes */
 %token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
 %token DASHED CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
-u
 
 /* text positioning */
 %token CENTER LJUST RJUST ABOVE BELOW
@@ -76,8 +77,9 @@ u
 
 %type <a> program statement element present label nth_prim
 %type <a> keyframe_stmt direction_stmt element_list by condition
-%type <a> primitive expr duration color position place
+%type <a> primitive expr duration color position place string
 %type <a> position_not_place expr_pair reset prim_labels
+%type <al>  sprintf_args
 %type <i> positioning easing corner optional_corner primitive_type
 %type <tl> iden_list
 
@@ -230,10 +232,10 @@ primitive: BOX
             { $$ = astPrim(PRIM_SPLINE); }
          | MOVE         
             { $$ = astPrim(PRIM_MOVE); }
-         | TEXT positioning
+         | string positioning
             {
                 struct ast *t = astPrim(PRIM_TEXT_LIST);
-                $$ = astAttr(t, ATTR_TXT, astTL(astText($1), $2));
+                $$ = astAttr(t, ATTR_TXT, astTL($1, $2));
             }
          | '[' element_list ']'
             {
@@ -303,8 +305,8 @@ primitive: BOX
             }
          | primitive FILL color
             { $$ = astAttr($1, ATTR_FILL, $3); }
-         | primitive TEXT positioning
-            { $$ = astAttr($1, ATTR_TXT, astTL(astText($2), $3)); }
+         | primitive string positioning
+            { $$ = astAttr($1, ATTR_TXT, astTL($2, $3)); }
          | primitive HT expr
             { $$ = astAttr($1, ATTR_HT, $3); }
          | primitive WID expr
@@ -415,6 +417,30 @@ expr: NUMBER
         { $$ = astOp(AST_RAND, NULL, NULL); }
     | ABS '(' expr ')'
         { $$ = astOp(AST_ABS , $3, NULL); }
+;
+
+string: TEXT
+            { $$ = astText($1); }
+      | SPRINTF '(' TEXT sprintf_args ')'
+            { $$ = astSpn(astText($3), $4); }
+;
+
+sprintf_args: %empty
+                {
+                    $$ = malloc(sizeof(struct astList));
+                    $$ -> maxn = 8;
+                    $$ -> nm = 0;
+                    $$ -> l = malloc(8 * sizeof(struct ast*)); 
+                }
+            | sprintf_args ',' expr
+                {
+                    $$ = $1;
+                    if ($$ -> nm == $$ -> maxn) {
+                        $$ -> l = realloc($$ -> l,
+                            sizeof(struct ast*) * ($$ -> maxn += 8));
+                    }
+                    $$ -> l[$$ -> nm++] = $3;
+                }
 ;
 
 color: HEXCOLOR
@@ -541,7 +567,7 @@ primitive_type: BOX     { $$ = PRIM_BOX; }
               | ARROW   { $$ = PRIM_ARROW; }
               | SPLINE  { $$ = PRIM_SPLINE; }
               | MOVE    { $$ = PRIM_MOVE; }
-              | TEXT    { $$ = PRIM_TEXT_LIST; }
+              | string  { $$ = PRIM_TEXT_LIST; }
               | '[' ']' { $$ = PRIM_BLOCK; }
               | TEXT_L  { $$ = PRIM_TEXT_LIST; }
               | BLOCK   { $$ = PRIM_BLOCK; }

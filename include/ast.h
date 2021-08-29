@@ -28,6 +28,7 @@ enum nodetype {
     AST_TL,
     AST_RGBA, 
     AST_TEXT,
+    AST_SPN,
     AST_INTL,
     AST_DRAW,
     AST_DIR,
@@ -111,6 +112,12 @@ struct ast {
     struct ast *r;
 };
 
+struct astList {
+    struct ast **l;
+    int nm;
+    int maxn;
+};
+
 union ast_type eval(struct ast*, ...);
 void freeTree(struct ast*);
 
@@ -125,6 +132,7 @@ struct ast* astAttr(struct ast*, enum attrib, struct ast*);
 struct ast* astTL(struct ast*, int);
 struct ast* astRGBA(struct ast*, struct ast*, struct ast*, struct ast*);
 struct ast* astText(char *s);
+struct ast* astSpn(struct ast*, struct astList*);
 struct ast* astDraw(struct ast*);
 struct ast* astDir(int);
 struct ast* astKF(struct ast*, int);
