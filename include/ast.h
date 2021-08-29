@@ -98,6 +98,7 @@ enum attrib{
     ATTR_WID,
     ATTR_RAD,
     ATTR_DIAM,
+    ATTR_SAME,
     ATTR_EXPR,
     ATTR_FROM,
     ATTR_TO,

@@ -92,7 +92,8 @@ void expand_macro();
 ".end"      { return DOT_END; }
 
 "top"       { return TOP; }
-"bot"       { return BOT; }
+"bot"       |
+"bottom"    { return BOT; }
 "start"     { return START; }
 "end"       { return END; }
 
@@ -107,6 +108,7 @@ void expand_macro();
 "radius"    { return RAD; }
 "diam"      |
 "daimeter"  { return DIAM; }
+"same"      { return SAME; }
 "chop"      { return CHOP; }
 
 "sin"       { return SIN; }
@@ -170,6 +172,13 @@ void expand_macro();
                 }
             }
 
+<MACRO_CALL>[ \t\n]     {
+                for (int i = 0; i < 10; i++) {
+                    G_ARGS[i] = "";
+                }
+                expand_macro();
+                BEGIN INITIAL;
+            }
     /* TODO: Allow for balanced parenthesis */
 <MACRO_CALL>"("         {
                 for (int i = 0; i < 10; i++) {

@@ -34,8 +34,8 @@ const struct {
     {"maxpsht", 8.5},
     {"scale", 1},
     {"fillval", 0.3},
-    {"ps", 20},
-    {"vs", 30}
+    {"ps", 10},
+    {"vs", 15}
 };
 
 static void catchErr(int signo) {

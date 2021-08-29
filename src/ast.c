@@ -666,6 +666,24 @@ evalAttr(struct _ast_attr *a) {
                 p -> flags |= 64;
             }
             break;
+        case ATTR_SAME:
+            {
+                if (p -> t < 3) {
+                    struct primitive *pr;
+                    pr = eval(a -> val, p -> t).e -> a.pr;
+                    if (p -> t < 2) {
+                        p -> ht = pr -> ht;
+                        p -> wid = pr -> wid;
+                    } else {
+                        if (pr -> flags & 64) {
+                            p -> rad = pr -> rad;
+                        } else {
+                            p -> rad = pr -> expr;
+                        }
+                        p -> flags |= 64;
+                    }
+                }
+            }
         case ATTR_EXPR:
             {
                 p -> expr = eval(a -> val).d / 2.0;
@@ -1248,6 +1266,11 @@ eval(struct ast *a, ...) {
         case AST_ORD:
             {
                 struct _ast_ord *t = (struct _ast_ord*) a;
+
+                if (t -> T == -1) {
+                    t -> T = va_arg(args, enum primitiveType);
+                }
+
                 if (t -> r) {
                     if (!(ret.e = getPrim_r(t -> T, t -> i))) {
                         fprintf(stderr, "Error: %dth primitive "

@@ -315,6 +315,8 @@ primitive: BOX
             { $$ = astAttr($1, ATTR_RAD, $3); }
          | primitive DIAM expr
             { $$ = astAttr($1, ATTR_DIAM, $3); }
+         | primitive SAME
+            { $$ = astAttr($1, ATTR_SAME, astOrd(1,-1,1)); }
          | primitive expr                   %prec HT
             { $$ = astAttr($1, ATTR_EXPR, $2); }
 ;

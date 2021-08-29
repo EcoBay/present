@@ -243,7 +243,6 @@ drawArc(cairo_t *cr, struct primitive *p){
 static void
 renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
     struct primitive *p = e -> a.pr;
-    if (p -> flags & 16) return;
 
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     switch (p -> t) {
