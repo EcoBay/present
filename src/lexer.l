@@ -242,7 +242,7 @@ void expand_macro();
                 yylval.i = atoi(yytext);
                 return ORDINAL;
             }
-\"([^\\\"]|\\.)*\"  {
+\"(\\.|[^\\\"\n])*\"    {
                 yytext[yyleng - 1] = '\0';
                 yylval.s = strdup(yytext + 1);
                 return TEXT;
@@ -320,7 +320,7 @@ void yyerror(char *s, ...){
     }
 }
 
-char *str_replace(char *orig, char *rep, char *with) {
+char* str_replace(char *orig, char *rep, char *with) {
     char *result;
     char *ins;
     char *tmp;

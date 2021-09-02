@@ -422,9 +422,16 @@ expr: NUMBER
 ;
 
 string: TEXT
-            { $$ = astText($1); }
+            {
+                $$ = astText(str_replace($1, "\\\"", "\""));
+                free($1);
+            }
       | SPRINTF '(' TEXT sprintf_args ')'
-            { $$ = astSpn(astText($3), $4); }
+            {
+                char *a = str_replace($3, "\\\"", "\"");
+                $$ = astSpn(astText(a), $4);
+                free($3);
+            }
 ;
 
 sprintf_args: %empty

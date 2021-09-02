@@ -9,4 +9,6 @@ extern FILE* yyin;
 int yylex(void);
 void yyerror(char *s, ...);
 
+char* str_replace(char*, char*, char*);
+
 #endif
