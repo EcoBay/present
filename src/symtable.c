@@ -121,7 +121,7 @@ getPrim(enum primitiveType T, int loc) {
         l = l -> next;
     }
 
-    return l -> e;
+    return l ? l -> e : NULL;
 }
 
 struct event*
@@ -133,7 +133,7 @@ getPrim_r(enum primitiveType T, int loc) {
         l = l -> prev;
     }
 
-    return l -> e;
+    return l ? l -> e : NULL;
 }
 
 void
