@@ -249,6 +249,15 @@ astKF(struct ast *duration, int easingFunc) {
 }
 
 struct ast*
+astScn(struct ast *l) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = AST_SCN;
+    a -> l = l;
+    a -> r = NULL;
+    return a;
+}
+
+struct ast*
 astOp(int op, struct ast *l, struct ast *r) {
     struct ast *a = malloc(sizeof(struct ast));
     a -> t = op;
@@ -1238,6 +1247,12 @@ eval(struct ast *a, ...) {
                 }
             }
             break;
+        case AST_SCN:
+            {
+                if (a -> l) newScene(eval(a -> l).s);
+                else newScene(NULL);
+            }
+            break;
         case AST_TBL:
             {
                 struct symTable *tb;
@@ -1365,6 +1380,7 @@ void freeTree (struct ast* a) {
         case AST_XOR:
         case AST_SAME:
         case AST_STMT:
+        case AST_SCN:
         case AST_GRP:
         case AST_RPT:
         case AST_DRAW:
@@ -1476,7 +1492,7 @@ void freeTree (struct ast* a) {
             }
             break;
 
-        // default:
+        default:
             yyerror("Internal Error: cannot free "
                     "AST with type of %d\n", a -> t);
             abort();

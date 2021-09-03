@@ -8,6 +8,9 @@
 extern struct presentation *g_presentation;
 extern struct primitive *g_parent;
 
+extern int g_sceneCtr;
+extern struct symbol *g_sceneCtrSym;
+
 #define NUM_PRIM_TYPE 10
 enum primitiveType {
     PRIM_BOX,
@@ -127,6 +130,7 @@ struct keyframe {
 struct scene {
     struct scene *next;
     struct keyframe *keyframes;
+    char *name;
 
     /* Cursor information */
     struct vec2d cursor;
@@ -139,7 +143,7 @@ struct presentation {
 
 void* getLast(void*);
 
-void newScene();
+void newScene(char*);
 void newKeyframe(float duration, enum easingFunction);
 struct event*  newDrawEvent(struct primitive*);
 struct primitive* newPrimitive(enum primitiveType);

@@ -29,6 +29,7 @@ const struct {
     {"dashwid", 0.1},
     {"arrowhead", 3.0},
     {"fillval", 0.3},
+    {"page", 0},
     {"ps", 10},
     {"vs", 15}
 };
@@ -108,6 +109,7 @@ int main(int argc, char **argv){
         union T v = { .d = builtIn[i].val };
         setSym(builtIn[i].sym, SYM_DOUBLE, v);
     }
+    g_sceneCtrSym = lookup("page");
 
     initPresentation();
     pushTable();        // For macro and type checking during parsing and lexing

@@ -41,14 +41,8 @@ createTex(char *s, int pt){
     fputs("\\documentclass[10pt]{standalone}\n", texFD);
     fputs("\\begin{document}\n", texFD);
 
-    struct symbol *sym;
-    sym = lookup("maxpswid");
-    int maxWid = (int) sym -> val.d;
-    int wid = MIN((int) (pt * 1.2), maxWid);
-
-
     fprintf(texFD, "{\\fontsize{%d}{%d} \\selectfont %s}\n",
-            pt, wid, s);
+            pt, (int) (pt * 1.2), s);
 
     fputs("\\end{document}\n", texFD);
     fclose(texFD);

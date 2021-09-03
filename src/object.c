@@ -11,6 +11,9 @@
 struct presentation *g_presentation = NULL;
 struct primitive *g_parent = NULL;
 
+int g_sceneCtr = 0;
+struct symbol *g_sceneCtrSym = NULL;
+
 void*
 getLast(void *i){
     if (!i) return NULL;
@@ -24,7 +27,7 @@ getLast(void *i){
 }
 
 void
-newScene(){
+newScene(char *name){
     struct scene *s = malloc(sizeof(struct scene));
     s -> next = NULL;
     s -> keyframes = NULL;
@@ -39,6 +42,15 @@ newScene(){
         popTable();
     }
 
+    if (name) {
+        s -> name = name;
+    } else {
+        char *a = malloc(10);
+        snprintf(a, 10, "scene-%03d", (g_sceneCtr + 1) % 1000);
+        s -> name = a;
+    }
+
+    g_sceneCtrSym -> val.d = ++g_sceneCtr;
     pushTable();
 }
 
@@ -53,20 +65,17 @@ newKeyframe(float duration, enum easingFunction easingFunc){
     if(!g_presentation -> scenes) {
         fprintf(stderr, "Warning: adding default scene before "
                 "line no. %d\n", yylineno);
-        newScene();
+        newScene(NULL);
     }
 
 
     struct scene *s = getLast(g_presentation -> scenes);
     if (!s -> keyframes) s -> keyframes = k;
     else {
-        popTable();
         struct keyframe *t = s -> keyframes;
         t = getLast(t);
         t -> next = k;
     }
-
-    pushTable();
 }
 
 struct event*
@@ -648,7 +657,7 @@ getDirection(){
     if (!s) {
         fprintf(stderr, "Warning: adding default scene before "
                 "line no. %d\n", yylineno);
-        newScene();
+        newScene(NULL);
         s = g_presentation -> scenes;
     }
     return s -> direction;
@@ -671,7 +680,7 @@ getCursor(struct vec2d* x){
     if (!s) {
         fprintf(stderr, "Warning: adding default scene before "
                 "line no. %d\n", yylineno);
-        newScene();
+        newScene(NULL);
         s = g_presentation -> scenes;
     }
     memcpy(x, &s -> cursor, sizeof(struct vec2d));

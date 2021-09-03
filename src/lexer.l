@@ -244,7 +244,7 @@ void expand_macro();
             }
 \"(\\.|[^\\\"\n])*\"    {
                 yytext[yyleng - 1] = '\0';
-                yylval.s = strdup(yytext + 1);
+                yylval.s = str_replace(yytext + 1, "\\\"", "\"");
                 return TEXT;
             }
 

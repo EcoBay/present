@@ -185,6 +185,8 @@ element_list: %empty                    { $$ = NULL; }
 
 present: keyframe_stmt                      { $$ = $1; }
        | FOR expr TIMES DO '{' program '}'  { $$ = astRpt($2, $6); }
+       | SCENE                              { $$ = astScn(NULL); }
+       | SCENE string                       { $$ = astScn($2); }
 ;
 
 keyframe_stmt: easing KEYFRAME              { $$ = astKF(NULL, $1); }
@@ -422,16 +424,9 @@ expr: NUMBER
 ;
 
 string: TEXT
-            {
-                $$ = astText(str_replace($1, "\\\"", "\""));
-                free($1);
-            }
+            { $$ = astText($1); }
       | SPRINTF '(' TEXT sprintf_args ')'
-            {
-                char *a = str_replace($3, "\\\"", "\"");
-                $$ = astSpn(astText(a), $4);
-                free($3);
-            }
+            { $$ = astSpn(astText($3), $4); }
 ;
 
 sprintf_args: %empty

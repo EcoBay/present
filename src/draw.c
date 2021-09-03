@@ -145,6 +145,7 @@ drawLineArrowhead(cairo_t *cr, struct primitive *p){
 
 static void
 drawLine(cairo_t *cr, struct primitive *p){
+    if (p -> flags & 16) return;
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
 
@@ -161,6 +162,7 @@ drawLine(cairo_t *cr, struct primitive *p){
 
 static void
 drawSpline(cairo_t *cr, struct primitive *p){
+    if (p -> flags & 16) return;
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
     cairo_line_to(cr,
@@ -208,6 +210,7 @@ drawTextList(cairo_t *cr, struct textList *t){
 
 static void
 drawArc(cairo_t *cr, struct primitive *p){
+    if (p -> flags & 16) return;
     cairo_new_path(cr);
 
     float rad = (p -> flags & 64) ? p -> rad : p -> expr;

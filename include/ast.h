@@ -33,6 +33,7 @@ enum nodetype {
     AST_DRAW,
     AST_DIR,
     AST_KF,
+    AST_SCN,
     AST_ASGN,
     AST_RST,
     AST_TBL,
@@ -137,6 +138,7 @@ struct ast* astSpn(struct ast*, struct astList*);
 struct ast* astDraw(struct ast*);
 struct ast* astDir(int);
 struct ast* astKF(struct ast*, int);
+struct ast* astScn(struct ast*);
 struct ast* astOp(int op, struct ast*, struct ast*);
 struct ast* astNum(float d);
 struct ast* astLoc(struct ast*, int);
