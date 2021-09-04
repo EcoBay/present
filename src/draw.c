@@ -8,25 +8,6 @@
 #include <math.h>
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
-#define SET_LINE_STYLE(CR, P) if (P -> flags & 4) { \
-        dashed(CR, P -> spacing);                   \
-    } else if (P -> flags & 8) {                    \
-        dotted(CR, P -> spacing, P -> ps);          \
-    } else {                                        \
-        cairo_set_dash(CR, NULL, 0, 0);             \
-    }
-#define FILL_AND_STROKE(CR, P) if (P -> flags & 32) {           \
-        cairo_set_source_rgba(CR,                               \
-            P -> fill -> r / 255.0, P -> fill -> g / 255.0,     \
-            P -> fill -> b / 255.0, P -> fill -> a / 255.0);    \
-        cairo_fill_preserve(CR);                                \
-    }                                                           \
-    if (!(P -> flags & 16)) {                                   \
-        cairo_set_source_rgb(CR,0, 0, 0);                       \
-        cairo_set_line_width(CR, P -> ps / 20.0 / DPI);         \
-        SET_LINE_STYLE(CR, P);                                  \
-        cairo_stroke(CR);                                       \
-    }
 
 int WIDTH = 960;
 int HEIGHT = 720;
@@ -50,8 +31,6 @@ drawRectangle(cairo_t *cr, struct primitive *p){
     cairo_rectangle(cr,
             p -> nw.x, p -> nw.y,
             p -> se.x - p -> nw.x, p -> se.y - p -> nw.y);
-
-    FILL_AND_STROKE(cr, p);
 }
 
 static void
@@ -66,7 +45,6 @@ drawEllipse(cairo_t *cr, struct primitive *p){
             1, 0, 2 * M_PI);
 
     cairo_set_matrix(cr, &save_matrix);
-    FILL_AND_STROKE(cr, p);
 }
 
 static void
@@ -78,8 +56,6 @@ drawCircle(cairo_t *cr, struct primitive *p){
             p -> c.x, p -> c.y, rad,
             0, 2 * M_PI);
     cairo_close_path(cr);
-
-    FILL_AND_STROKE(cr, p);
 }
 
 static void
@@ -123,6 +99,7 @@ getRotation(float x, float y){
 
 static void
 drawLineArrowhead(cairo_t *cr, struct primitive *p){
+    if (p -> flags & 16) return;
     struct vec2d l0 = p -> start;
     struct vec2d l1 = { p -> segments -> x, p -> segments -> y };
 
@@ -145,7 +122,7 @@ drawLineArrowhead(cairo_t *cr, struct primitive *p){
 
 static void
 drawLine(cairo_t *cr, struct primitive *p){
-    if (p -> flags & 16) return;
+    drawLineArrowhead(cr, p);
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
 
@@ -153,16 +130,11 @@ drawLine(cairo_t *cr, struct primitive *p){
         cairo_line_to(cr, l -> x, l -> y);
     }
 
-    cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
-    SET_LINE_STYLE(cr, p);
-    cairo_stroke(cr);
-
-    drawLineArrowhead(cr, p);
 }
 
 static void
 drawSpline(cairo_t *cr, struct primitive *p){
-    if (p -> flags & 16) return;
+    drawLineArrowhead(cr, p);
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
     cairo_line_to(cr,
@@ -185,11 +157,6 @@ drawSpline(cairo_t *cr, struct primitive *p){
     }
 
     cairo_line_to(cr, l -> x, l -> y);
-    cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
-    SET_LINE_STYLE(cr, p);
-    cairo_stroke(cr);
-
-    drawLineArrowhead(cr, p);
 }
 
 static void
@@ -210,14 +177,23 @@ drawTextList(cairo_t *cr, struct textList *t){
 
 static void
 drawArc(cairo_t *cr, struct primitive *p){
-    if (p -> flags & 16) return;
-    cairo_new_path(cr);
-
     float rad = (p -> flags & 64) ? p -> rad : p -> expr;
     float theta0 = getRotation(p -> start.x - p -> c.x, p -> start.y - p -> c.y);
     float theta1 = getRotation(p -> end.x - p -> c.x, p -> end.y - p -> c.y);
     float cw = 1;
 
+    if (!(p -> flags & 16)) {
+        if ( p -> arrowStyle & 2 ) {
+            float ps = (p -> arrowhead & 2) ? 0.0f : p -> ps;
+            drawArrowhead(cr, &p -> start, theta0 - M_PI / 2.0 * cw, p -> arrowht, p -> arrowwid, ps);
+        }
+        if ( p -> arrowStyle & 1 ) {
+            float ps = (p -> arrowhead & 1) ? 0.0f : p -> ps;
+            drawArrowhead(cr, &p -> end, theta1 + M_PI / 2.0 * cw, p -> arrowht, p -> arrowwid, ps);
+        }
+    }
+
+    cairo_new_path(cr);
     if (p -> flags & 2) {
         cairo_arc_negative(cr,
                 p -> c.x, p -> c.y,
@@ -227,19 +203,6 @@ drawArc(cairo_t *cr, struct primitive *p){
         cairo_arc(cr,
                 p -> c.x, p -> c.y,
                 rad, theta0, theta1);
-    }
-
-    cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
-    SET_LINE_STYLE(cr, p);
-    cairo_stroke(cr);
-
-    if ( p -> arrowStyle & 2 ) {
-        float ps = (p -> arrowhead & 2) ? 0.0f : p -> ps;
-        drawArrowhead(cr, &p -> start, theta0 - M_PI / 2.0 * cw, p -> arrowht, p -> arrowwid, ps);
-    }
-    if ( p -> arrowStyle & 1 ) {
-        float ps = (p -> arrowhead & 1) ? 0.0f : p -> ps;
-        drawArrowhead(cr, &p -> end, theta1 + M_PI / 2.0 * cw, p -> arrowht, p -> arrowwid, ps);
     }
 }
 
@@ -285,6 +248,29 @@ prepareDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
         case PRIM_TEXT_LIST:
             break;
     }
+
+    if (p -> flags & 32) {
+        cairo_set_source_rgba(cr,
+            p -> fill -> r / 255.0, p -> fill -> g / 255.0,
+            p -> fill -> b / 255.0, p -> fill -> a / 255.0);
+        cairo_fill_preserve(cr);
+    }
+    if (!(p -> flags & 16)) {
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_set_line_width(cr, p -> ps / 20.0 / DPI);
+        if (p -> flags & 4) {
+            dashed(cr, p -> spacing);
+        } else if (p -> flags & 8) {
+            dotted(cr, p -> spacing, p -> ps);
+        } else {
+            cairo_set_dash(cr, NULL, 0, 0);
+        }
+        cairo_stroke(cr);
+    } else {
+        cairo_set_source_rgba(cr, 0, 0, 0, 0);
+        cairo_stroke(cr);
+    }
+
     drawTextList(cr, p -> txt);
     return cairo_pop_group(cr);
 }
