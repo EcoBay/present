@@ -244,8 +244,18 @@ drawArc(cairo_t *cr, struct primitive *p){
 }
 
 static void
-renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
-    struct primitive *p = e -> a.pr;
+renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
+    if (e -> eventType == 0) {
+        cairo_set_source(cr, e -> pat);
+        cairo_paint(cr);
+    } else {
+    }
+}
+
+static cairo_pattern_t*
+prepareDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
+    struct primitive *p = e -> pr;
+    cairo_push_group(cr);
 
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     switch (p -> t) {
@@ -266,7 +276,8 @@ renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
             {
                 struct event *e = p -> child;
                 for (; e; e = e -> next) {
-                    renderDrawEvent(surface, cr, e);
+                    e -> pat = prepareDrawEvent(surface, cr, e);
+                    renderEvent(surface, cr, e);
                 }
             }
             break;
@@ -275,12 +286,13 @@ renderDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
             break;
     }
     drawTextList(cr, p -> txt);
+    return cairo_pop_group(cr);
 }
 
 static void
-renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
+prepareEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e) {
     if (e -> eventType == 0) {
-        renderDrawEvent(surface, cr, e);
+        e -> pat = prepareDrawEvent(surface, cr, e);
     } else {
     }
 }
@@ -319,6 +331,10 @@ renderPresentation(const char* filename){
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
         cairo_paint(cr);
         for (struct keyframe *k = s -> keyframes; k; k = k -> next) {
+            for (struct event *e = k -> events; e; e = e -> next) {
+                prepareEvent(surface, cr, e);
+            }
+
             cairo_surface_flush(surface);
             memcpy(tempBuf, buf, buffSize);
             for (int i = 0; i < k -> duration * FRAMERATE; i++) {

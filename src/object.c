@@ -86,7 +86,7 @@ newDrawEvent(struct primitive *p){
     struct event *e = malloc(sizeof(struct event));
     e -> next = NULL;
     e -> eventType = 0;
-    e -> a.pr = p;
+    e -> pr = p;
 
     if (g_parent) {
 
@@ -394,7 +394,7 @@ translatePrimitive(struct primitive *p) {
 
     struct event *e = p -> child;
     while (e) {
-        struct primitive *t = e -> a.pr;
+        struct primitive *t = e -> pr;
         if (!t -> at) {
             t -> at = malloc(sizeof(struct vec2d));
         }
@@ -609,9 +609,9 @@ preparePrimitive(struct primitive *p){
 
                 e = p -> child;
                 for(int i = 0; e; e = e -> next) {
-                    ps[i++] = e -> a.pr -> nw;
-                    ps[i++] = e -> a.pr -> se;
-                    p -> end = e -> a.pr -> end;
+                    ps[i++] = e -> pr -> nw;
+                    ps[i++] = e -> pr -> se;
+                    p -> end = e -> pr -> end;
                 }
             }
             break;

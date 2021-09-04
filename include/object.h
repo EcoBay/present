@@ -104,11 +104,6 @@ struct primitive {
     uint8_t arrowhead;
 };
 
-union eventState {
-    struct particle *pt;
-    struct primitive *pr;
-};
-
 struct event {
     struct event *next;
 
@@ -117,7 +112,10 @@ struct event {
      * 1 - Transform
      */
     uint8_t eventType;
-    union eventState a;
+    struct primitive *pr;
+
+    struct particle *par;
+    cairo_pattern_t *pat;
 };
 
 struct keyframe {

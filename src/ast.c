@@ -679,7 +679,7 @@ evalAttr(struct _ast_attr *a) {
             {
                 if (p -> t < 3) {
                     struct primitive *pr;
-                    pr = eval(a -> val, p -> t).e -> a.pr;
+                    pr = eval(a -> val, p -> t).e -> pr;
                     if (p -> t < 2) {
                         p -> ht = pr -> ht;
                         p -> wid = pr -> wid;
@@ -979,7 +979,7 @@ eval(struct ast *a, ...) {
                 ret.v = malloc(sizeof(struct vec2d));
 
                 struct primitive *p;
-                p = eval(t -> a).e -> a.pr;
+                p = eval(t -> a).e -> pr;
                 getLoc(p, ret.v, t -> i);
             }
             break;
@@ -1256,7 +1256,7 @@ eval(struct ast *a, ...) {
         case AST_TBL:
             {
                 struct symTable *tb;
-                if (!(tb =  eval(a -> l).e -> a.pr -> tb)) {
+                if (!(tb =  eval(a -> l).e -> pr -> tb)) {
                     fprintf(stderr, "Error: primitive is not a block\n");
                     abort();
                 }
