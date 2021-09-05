@@ -257,7 +257,6 @@ void expand_macro();
             }
 
 "\\#".*
-"#".*
 [ \t]
 \n          { return EOL; }
 ";"         |
