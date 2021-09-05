@@ -325,10 +325,12 @@ prepareTextList(struct textList *t, struct vec2d *o, struct vec2d **ps, size_t *
             t -> nw.y -= dim.y / 2;
         } //below
 
+        t -> se.x = t -> nw.x + dim.x;
+        t -> se.y = t -> nw.y - dim.y;
+
         if (ps && count) {
             (*ps)[i * 2] = t -> nw;
-            (*ps)[i * 2 + 1].x = t -> nw.x + dim.x;
-            (*ps)[i * 2 + 1].y = t -> nw.y - dim.y;
+            (*ps)[i * 2 + 1] = t -> se;
         }
 
         curY -= ht;
@@ -382,6 +384,7 @@ translatePrimitive(struct primitive *p) {
     struct textList *t = p -> txt;
     while (t) {
         INC_VEC(t -> nw, trl);
+        INC_VEC(t -> se, trl);
         t = t -> next;
     }
 

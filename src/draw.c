@@ -8,6 +8,7 @@
 #include <math.h>
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 int WIDTH = 960;
 int HEIGHT = 720;
@@ -206,11 +207,79 @@ drawArc(cairo_t *cr, struct primitive *p){
     }
 }
 
+static struct vec2d*
+getExtremes(struct primitive *p) {
+    float x0 = p -> c.x, y0 = p -> c.y;
+    float x1 = p -> c.x, y1 = p -> c.y;
+
+#define GET_BOUND(L)    \
+    x0 = MIN(x0, L.x);  \
+    y0 = MIN(y0, L.y);  \
+    x1 = MAX(x1, L.x);  \
+    y1 = MAX(y1, L.y);
+
+    GET_BOUND(p -> n);
+    GET_BOUND(p -> e);
+    GET_BOUND(p -> w);
+    GET_BOUND(p -> s);
+
+    GET_BOUND(p -> ne);
+    GET_BOUND(p -> nw);
+    GET_BOUND(p -> se);
+    GET_BOUND(p -> sw);
+
+    for (struct textList *t = p -> txt; t; t = t -> next) {
+        GET_BOUND(t -> nw);
+        GET_BOUND(t -> se);
+    }
+#undef GET_BOUND
+
+    x0 -= 0.1;
+    y0 -= 0.1;
+    x1 += 0.1;
+    y1 += 0.1;
+
+    struct vec2d *r = malloc(3 * sizeof(struct vec2d));
+    r[0].x = x0;
+    r[0].y = y0;
+    r[1].x = (x0 + x1) / 2.0;
+    r[1].y = (y0 + y1) / 2.0;
+    r[2].x = x1;
+    r[2].y = y1;
+
+    return r;
+}
+
 static void
-renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
+prepareMask(cairo_t *cr, struct primitive *p, float f) {
+    struct vec2d *e = getExtremes(p);
+
+    switch (p -> direction) {
+        case 0:
+            cairo_rectangle(cr, e[0].x, e[0].y,
+                    e[2].x - e[0].x, f * (e[2].y - e[0].y));
+            break;
+        case 1:
+            cairo_rectangle(cr, e[0].x, e[0].y,
+                    f * (e[2].x - e[0].x), e[2].y - e[0].y);
+            break;
+        case 2:
+            cairo_rectangle(cr, e[2].x, e[2].y,
+                    e[0].x - e[2].x, f * (e[0].y - e[2].y));
+            break;
+        case 3:
+            cairo_rectangle(cr, e[2].x, e[2].y,
+                    f * (e[0].x - e[2].x), e[0].y - e[2].y);
+            break;
+    }
+}
+
+static void
+renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e, float p){
     if (e -> eventType == 0) {
         cairo_set_source(cr, e -> pat);
-        cairo_paint(cr);
+        prepareMask(cr, e -> pr, p);
+        cairo_fill(cr);
     } else {
     }
 }
@@ -240,7 +309,7 @@ prepareDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
                 struct event *e = p -> child;
                 for (; e; e = e -> next) {
                     e -> pat = prepareDrawEvent(surface, cr, e);
-                    renderEvent(surface, cr, e);
+                    renderEvent(surface, cr, e, 1.0);
                 }
             }
             break;
@@ -283,6 +352,16 @@ prepareEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e) {
     }
 }
 
+static float
+ease(float i, float t, enum easingFunction easingFunc) {
+    float p = i / t;
+    switch (easingFunc) {
+        case EASE_LINEAR:
+            break;
+    }
+    return p;
+}
+
 void
 renderPresentation(const char* filename){
     char *ffmpeg_cmd = malloc(256);
@@ -323,13 +402,15 @@ renderPresentation(const char* filename){
 
             cairo_surface_flush(surface);
             memcpy(tempBuf, buf, buffSize);
-            for (int i = 0; i < k -> duration * FRAMERATE; i++) {
+            const int numFrame = k -> duration * FRAMERATE;
+            for (int i = 0; i < numFrame; i++) {
                 if (k -> events) {
                     memcpy(buf, tempBuf, buffSize);
                     cairo_surface_mark_dirty(surface);
                 }
                 for (struct event *e = k -> events; e; e = e -> next) {
-                    renderEvent(surface, cr, e);
+                    float p = ease(i, numFrame, k -> easingFunc);
+                    renderEvent(surface, cr, e, p);
                 }
                 fwrite(buf, WIDTH * HEIGHT * 4, 1, ffmpeg);
             }

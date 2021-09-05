@@ -491,7 +491,7 @@ evalAttr(struct _ast_attr *a) {
 
                 p -> flags |= 1;
                 setDirection(0);
-            } else if (p -> t == 3) {
+            } else {
                 p -> direction = 0;
             }
             break;
@@ -513,7 +513,7 @@ evalAttr(struct _ast_attr *a) {
 
                 p -> flags |= 1;
                 setDirection(1);
-            } else if (p -> t == 3) {
+            } else {
                 p -> direction = 1;
             }
             break;
@@ -535,7 +535,7 @@ evalAttr(struct _ast_attr *a) {
 
                 p -> flags |= 1;
                 setDirection(2);
-            } else if (p -> t == 3) {
+            } else {
                 p -> direction = 2;
             }
             break;
@@ -557,7 +557,7 @@ evalAttr(struct _ast_attr *a) {
 
                 p -> flags |= 1;
                 setDirection(3);
-            } else if (p -> t == 3) {
+            } else {
                 p -> direction = 3;
             }
             break;

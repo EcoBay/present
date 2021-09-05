@@ -56,6 +56,7 @@ struct textList {
     uint8_t positioning;
     RsvgHandle* h;
     struct vec2d nw;
+    struct vec2d se;
 };
 
 struct primitive {
