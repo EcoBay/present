@@ -127,6 +127,7 @@ void expand_macro();
 "keyframe"  { return KEYFRAME; }
 "scene"     { return SCENE; }
 
+"still"     { return STILL; }
 "linear"    { return LINEAR; }
 "sine"      { return SINE; }
 "quadratic" { return QUADRATIC; }

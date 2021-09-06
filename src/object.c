@@ -102,7 +102,7 @@ newDrawEvent(struct primitive *p){
         if (!s -> keyframes) {
             fprintf(stderr, "Warning: adding default keyframe before "
                     "line no. %d\n", yylineno - 1);
-            newKeyframe(1.0, EASE_LINEAR);
+            newKeyframe(1.0, EASE_STILL);
         }
 
         struct keyframe *k = getLast(s -> keyframes);

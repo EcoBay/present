@@ -354,12 +354,49 @@ prepareEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e) {
 
 static float
 ease(float i, float t, enum easingFunction easingFunc) {
-    float p = i / t;
+    float x = i / t;
     switch (easingFunc) {
+        case EASE_STILL:
+            x = 1.0;
+            break;
         case EASE_LINEAR:
             break;
+
+        case EASE_SINE:
+            x = -(cosf(M_PI * x) - 1.0) / 2.0;
+            break;
+        case EASE_IN_SINE:
+            x = 1.0 - cosf((x * M_PI) / 2.0);
+            break;
+        case EASE_OUT_SINE:
+            x = sinf((x * M_PI) / 2.0);
+            break;
+
+#define SQ(a) ((a) * (a))
+        case EASE_QUAD:
+            x = x < 0.5 ? 2.0 * SQ(x) : 1.0 - SQ(-2.0 * x + 2.0) / 2.0;
+            break;
+        case EASE_IN_QUAD:
+            x = SQ(x);
+            break;
+        case EASE_OUT_QUAD:
+            x = 1.0 - SQ(1.0 - x);
+            break;
+#undef SQ
+
+#define CB(a) ((a) * (a) * (a))
+        case EASE_CUBIC:
+            x = x < 0.5 ? 4.0 * CB(x) : 1.0 - CB(-2.0 * x + 2.0) / 2.0;
+            break;
+        case EASE_IN_CUBIC:
+            x = CB(x);
+            break;
+        case EASE_OUT_CUBIC:
+            x = 1.0 - CB(1.0 - x);
+            break;
+#undef CB
     }
-    return p;
+    return x;
 }
 
 void

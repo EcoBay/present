@@ -67,7 +67,7 @@ struct _t {
 %token KEYFRAME SCENE
 
 /* easing function */
-%token LINEAR SINE QUADRATIC CUBIC
+%token STILL LINEAR SINE QUADRATIC CUBIC
 %token IN OUT
 
 /* time units */
@@ -193,7 +193,8 @@ keyframe_stmt: easing KEYFRAME              { $$ = astKF(NULL, $1); }
              | easing KEYFRAME FOR duration { $$ = astKF($4, $1); }
 ;
 
-easing: %empty          { $$ = EASE_LINEAR; }
+easing: %empty          { $$ = EASE_STILL; }
+      | STILL           { $$ = EASE_STILL; }
       | LINEAR          { $$ = EASE_LINEAR; }
       | SINE            { $$ = EASE_SINE; }
       | SINE IN         { $$ = EASE_IN_SINE; }

@@ -26,6 +26,7 @@ enum primitiveType {
 };
 
 enum easingFunction {
+    EASE_STILL,
     EASE_LINEAR,
     EASE_SINE,
     EASE_IN_SINE,
