@@ -748,6 +748,9 @@ evalAttr(struct _ast_attr *a) {
                 free(v);
             }
             break;
+        case ATTR_ANIM:
+            p -> anim = eval(a -> val).i;
+            break;
     }
 
     return p;

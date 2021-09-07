@@ -106,6 +106,7 @@ enum attrib{
     ATTR_CHOP,
     ATTR_WITH,
     ATTR_AT,
+    ATTR_ANIM,
 };
 
 struct ast {

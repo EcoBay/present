@@ -136,6 +136,10 @@ void expand_macro();
 "in"        { return IN; }
 "out"       { return OUT; }
 
+"fade"      { return FADE; }
+"sweep"     { return SWEEP; }
+"ripple"    { return RIPPLE; }
+
 "s"         |
 "second"s?  { return SECONDS; }
 "ms"            |

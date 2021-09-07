@@ -70,6 +70,9 @@ struct _t {
 %token STILL LINEAR SINE QUADRATIC CUBIC
 %token IN OUT
 
+/* animation */
+%token FADE SWEEP RIPPLE
+
 /* time units */
 %token SECONDS MILLISECONDS MINUTES
 
@@ -78,7 +81,7 @@ struct _t {
 %type <a> program statement element present label nth_prim
 %type <a> keyframe_stmt direction_stmt element_list by condition
 %type <a> primitive expr duration color position place string
-%type <a> position_not_place expr_pair reset prim_labels
+%type <a> position_not_place expr_pair reset prim_labels animation
 %type <al>  sprintf_args
 %type <i> positioning easing corner optional_corner primitive_type
 %type <tl> iden_list
@@ -322,6 +325,14 @@ primitive: BOX
             { $$ = astAttr($1, ATTR_SAME, astOrd(1,-1,1)); }
          | primitive expr                   %prec HT
             { $$ = astAttr($1, ATTR_EXPR, $2); }
+         | primitive animation
+            { $$ = astAttr($1, ATTR_ANIM, $2); }
+;
+
+animation: STILL    { $$ = astInt(0); }
+         | FADE     { $$ = astInt(1); }
+         | SWEEP    { $$ = astInt(2); }
+         | RIPPLE   { $$ = astInt(3); }
 ;
 
 positioning: %empty

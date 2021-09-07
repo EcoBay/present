@@ -250,36 +250,63 @@ getExtremes(struct primitive *p) {
     return r;
 }
 
-static void
+static cairo_pattern_t*
 prepareMask(cairo_t *cr, struct primitive *p, float f) {
     struct vec2d *e = getExtremes(p);
+    cairo_pattern_t *pat;
 
-    switch (p -> direction) {
+#define LEP(P, T)                                           \
+    cairo_pattern_add_color_stop_rgba(P, 0, 0, 0, 0, 1);    \
+    cairo_pattern_add_color_stop_rgba(P, T, 0, 0, 0, 1);    \
+    cairo_pattern_add_color_stop_rgba(P, T, 0, 0, 0, 0);    \
+    cairo_pattern_add_color_stop_rgba(P, 1, 0, 0, 0, 0);
+
+    switch (p -> anim) {
         case 0:
-            cairo_rectangle(cr, e[0].x, e[0].y,
-                    e[2].x - e[0].x, f * (e[2].y - e[0].y));
+            pat = cairo_pattern_create_rgba(0,0,0,1);
             break;
         case 1:
-            cairo_rectangle(cr, e[0].x, e[0].y,
-                    f * (e[2].x - e[0].x), e[2].y - e[0].y);
+            pat = cairo_pattern_create_rgba(0,0,0,f);
             break;
         case 2:
-            cairo_rectangle(cr, e[2].x, e[2].y,
-                    e[0].x - e[2].x, f * (e[0].y - e[2].y));
+            switch (p -> direction) {
+                case 0:
+                    pat = cairo_pattern_create_linear(e[1].x, e[0].y,
+                            e[1].x, e[2].y);
+                    break;
+                case 1:
+                    pat = cairo_pattern_create_linear(e[0].x, e[1].y,
+                            e[2].x, e[1].y);
+                    break;
+                case 2:
+                    pat = cairo_pattern_create_linear(e[1].x, e[2].y,
+                            e[1].x, e[0].y);
+                    break;
+                case 3:
+                    pat = cairo_pattern_create_linear(e[2].x, e[1].y,
+                            e[0].x, e[1].y);
+                    break;
+            }
+            LEP(pat, f);
             break;
         case 3:
-            cairo_rectangle(cr, e[2].x, e[2].y,
-                    f * (e[0].x - e[2].x), e[0].y - e[2].y);
+            pat = cairo_pattern_create_radial(e[1].x, e[1].y,
+                    0,  e[1].x, e[1].y, e[2].x - e[1].x);
+            LEP(pat, f);
             break;
     }
+
+    return pat;
 }
 
 static void
 renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e, float p){
     if (e -> eventType == 0) {
         cairo_set_source(cr, e -> pat);
-        prepareMask(cr, e -> pr, p);
-        cairo_fill(cr);
+        cairo_pattern_t *pat;
+        pat = prepareMask(cr, e -> pr, p);
+        cairo_mask(cr, pat);
+        cairo_pattern_destroy(pat);
     } else {
     }
 }

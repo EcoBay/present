@@ -94,6 +94,7 @@ struct primitive {
      */
     struct color *fill;
     struct textList *txt;
+    uint8_t anim;
 
     /* block primitive */
     struct symTable *tb;

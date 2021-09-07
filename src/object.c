@@ -137,6 +137,7 @@ newPrimitive(enum primitiveType t){
     p -> flags = 0;
     p -> fill = NULL;
     p -> txt = NULL;
+    p -> anim = 0;
 
     p -> tb = NULL;
     p -> child = NULL;
