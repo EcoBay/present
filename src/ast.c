@@ -760,7 +760,6 @@ union ast_type
 eval(struct ast *a, ...) {
     union ast_type ret = {.i = 0};
     if (!a) return ret;
-    struct symbol *s;
 
     va_list args;
     va_start(args, a);
@@ -774,7 +773,14 @@ eval(struct ast *a, ...) {
             break;
         case AST_REF:
             {
-                s = lookup(((struct _ast_term*) a) -> val.s);
+                char *sym = ((struct _ast_term*) a) -> val.s;
+                struct symbol *s = lookup(sym);
+                if (!s) {
+                    fprintf(stderr, "Error: referenced "
+                            "\"%s\" before initialized\n",
+                            sym);
+                    abort();
+                }
                 ret.d = s -> val.d;
             }
             break;
@@ -1143,7 +1149,7 @@ eval(struct ast *a, ...) {
             break;
         case AST_TL:
             {
-                s = lookup("ps");
+                struct symbol *s = lookup("ps");
                 struct _ast_tl *t = (struct _ast_tl*) a;
                 char *str = eval(t -> s).s;
                 char *id = createTex(str, s -> val.d);
@@ -1273,7 +1279,8 @@ eval(struct ast *a, ...) {
         case AST_LBL:
             {
                 char *sym = ((struct _ast_term*) a) -> val.s;
-                if (!(s = lookup(sym))) {
+                struct symbol *s = lookup(sym);
+                if (!s) {
                     fprintf(stderr, "Error: label \"%s\" "
                             "not found\n", sym);
                     abort();

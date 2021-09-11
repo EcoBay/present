@@ -43,11 +43,11 @@ static void catchErr(int signo) {
 }
 
 int main(int argc, char **argv){
-    // struct sigaction sa;
-    // sa.sa_handler = catchErr;
+    struct sigaction sa;
+    sa.sa_handler = catchErr;
 
-    // sigaction(SIGABRT, &sa, NULL);
-    // sigaction(SIGINT, &sa,  NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGINT, &sa,  NULL);
 
     int opt;
     char *out = strdup("out.mp4");
