@@ -91,6 +91,7 @@ struct primitive {
      *  32 - filled
      *  64 - hasRadius
      * 128 - hasChop
+     * 256 - closed
      */
     struct color *fill;
     struct textList *txt;

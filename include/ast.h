@@ -90,6 +90,7 @@ enum attrib{
     ATTR_RARROW,
     ATTR_LRARROW,
     ATTR_CW,
+    ATTR_CLS,
     ATTR_DASHED,
     ATTR_DOTTED,
     ATTR_SOLID,

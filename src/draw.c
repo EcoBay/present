@@ -123,7 +123,9 @@ drawLineArrowhead(cairo_t *cr, struct primitive *p){
 
 static void
 drawLine(cairo_t *cr, struct primitive *p){
-    drawLineArrowhead(cr, p);
+    if (!(p -> flags & 256)) {
+        drawLineArrowhead(cr, p);
+    }
     cairo_new_path(cr);
     cairo_move_to(cr, p -> start.x, p -> start.y);
 
@@ -131,33 +133,66 @@ drawLine(cairo_t *cr, struct primitive *p){
         cairo_line_to(cr, l -> x, l -> y);
     }
 
+    if (p -> flags & 256) {
+        cairo_line_to(cr, p -> start.x, p -> start.y);
+    }
 }
 
 static void
 drawSpline(cairo_t *cr, struct primitive *p){
-    drawLineArrowhead(cr, p);
-    cairo_new_path(cr);
-    cairo_move_to(cr, p -> start.x, p -> start.y);
-    cairo_line_to(cr,
-            (p -> start.x + p -> segments -> x) / 2.0,
-            (p -> start.y + p -> segments -> y) / 2.0);
+
+#define LEP(T, P0, P1) ((T) * (P0) + (1.0 - (T)) * (P1))
+
+    if (p -> flags & 256) {
+        cairo_new_path(cr);
+        cairo_move_to(cr,
+                LEP(0.5, p -> start.x, p -> segments -> x),
+                LEP(0.5, p -> start.y, p -> segments -> y));
+    } else {
+        drawLineArrowhead(cr, p);
+        cairo_new_path(cr);
+        cairo_move_to(cr, p -> start.x, p -> start.y);
+        cairo_line_to(cr,
+                LEP(0.5, p -> start.x, p -> segments -> x),
+                LEP(0.5, p -> start.y, p -> segments -> y));
+    }
 
     struct location *l = p -> segments;
     struct vec2d l0 = { p -> start.x, p -> start.y };
 
     while (l -> next) {
         cairo_curve_to(cr,
-                (l0.x + 4.0 * l -> x) / 5.0,
-                (l0.y + 4.0 * l -> y) / 5.0,
-                (4.0 * l -> x + l -> next -> x) / 5.0,
-                (4.0 * l -> y + l -> next -> y) / 5.0,
-                (l -> x + l -> next -> x) / 2.0,
-                (l -> y + l -> next -> y) / 2.0);
+                LEP(0.2, l0.x, l -> x),
+                LEP(0.2, l0.y, l -> y),
+                LEP(0.8, l -> x, l -> next -> x),
+                LEP(0.8, l -> y, l -> next -> y),
+                LEP(0.5, l -> x, l -> next -> x),
+                LEP(0.5, l -> y, l -> next -> y));
         l0 = (struct vec2d) {l -> x, l -> y};
         l = l -> next;
     }
 
-    cairo_line_to(cr, l -> x, l -> y);
+    if (p -> flags & 256) {
+        cairo_curve_to(cr,
+                LEP(0.2, l0.x, l -> x),
+                LEP(0.2, l0.y, l -> y),
+                LEP(0.8, l -> x, p -> start.x),
+                LEP(0.8, l -> y, p -> start.y),
+                LEP(0.5, l -> x, p -> start.x),
+                LEP(0.5, l -> y, p -> start.y));
+
+        cairo_curve_to(cr,
+                LEP(0.2, l -> x, p -> start.x),
+                LEP(0.2, l -> y, p -> start.y),
+                LEP(0.8, p -> start.x, p -> segments -> x),
+                LEP(0.8, p -> start.y, p -> segments -> y),
+                LEP(0.5, p -> start.x, p -> segments -> x),
+                LEP(0.5, p -> start.y, p -> segments -> y));
+    } else {
+        cairo_line_to(cr, l -> x, l -> y);
+    }
+#undef LEP
+
 }
 
 static void

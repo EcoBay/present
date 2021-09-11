@@ -49,7 +49,7 @@ struct _t {
 %token DOT_NE DOT_NW DOT_SE DOT_SW DOT_START DOT_END
 
 /* attributes */
-%token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW
+%token HT WID RAD DIAM FROM TO AT WITH BY THEN DOTTED CW CLOSE
 %token DASHED CHOP LARROW RARROW LRARROW INVIS SOLID FILL SAME
 
 /* text positioning */
@@ -290,6 +290,8 @@ primitive: BOX
             { $$ = astAttr($1, ATTR_LRARROW, NULL); }
          | primitive CW
             { $$ = astAttr($1, ATTR_CW, NULL); }
+         | primitive CLOSE
+            { $$ = astAttr($1, ATTR_CLS, NULL); }
          | primitive DASHED
             { $$ = astAttr($1, ATTR_DASHED, NULL); }
          | primitive DASHED expr

@@ -66,6 +66,7 @@ void expand_macro();
 "<->"       { return LRARROW; }
 
 "cw"        { return CW; }
+"close"     { return CLOSE; }
 
 "dashed"    { return DASHED; }
 "dotted"    { return DOTTED; }

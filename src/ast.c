@@ -619,6 +619,11 @@ evalAttr(struct _ast_attr *a) {
                 p -> flags |= 2;
             }
             break;
+        case ATTR_CLS:
+            {
+                p -> flags |= 256;
+            }
+            break;
         case ATTR_DASHED:
             {
                 p -> flags &= ~12;

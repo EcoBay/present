@@ -510,7 +510,12 @@ preparePrimitive(struct primitive *p){
                     };
                     l = l -> next;
                 }
-                p -> end = ps[count - 1];
+
+                if (p -> flags & 256) {
+                    p -> end = p -> start;
+                } else {
+                    p -> end = ps[count - 1];
+                }
             }
             break;
         case PRIM_ARC:
