@@ -127,6 +127,8 @@ void expand_macro();
 
 "keyframe"  { return KEYFRAME; }
 "scene"     { return SCENE; }
+"transform" { return TRANSFORM; }
+"into"      { return INTO; }
 
 "still"     { return STILL; }
 "linear"    { return LINEAR; }
@@ -376,6 +378,9 @@ void expand_macro() {
         r[1] += i;
 
         a = str_replace(a, r, G_ARGS[i]);
+        if (strcmp(G_ARGS[i], "")) {
+            free(G_ARGS[i]);
+        }
 
         free(b);
         b = a;
@@ -384,4 +389,5 @@ void expand_macro() {
     yypush_buffer_state(YY_CURRENT_BUFFER);
     yy_scan_string(a);
     free(a);
+    free(G_IDEN);
 }

@@ -1,9 +1,9 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <librsvg/rsvg.h>
-#include <stdint.h>
 #include <cairo.h>
+#include <stdint.h>
+#include <librsvg/rsvg.h>
 
 extern struct presentation *g_presentation;
 extern struct primitive *g_parent;
@@ -110,15 +110,18 @@ struct primitive {
 
 struct event {
     struct event *next;
+    char *sym;
 
     /* Event Type
      * 0 - Draw
      * 1 - Transform
+     * 2 - Dummy
      */
     uint8_t eventType;
     struct primitive *pr;
 
-    struct particle *par;
+    struct event *from;
+    struct particles *par;
     cairo_pattern_t *pat;
 };
 
@@ -147,7 +150,9 @@ void* getLast(void*);
 
 void newScene(char*);
 void newKeyframe(float duration, enum easingFunction);
-struct event*  newDrawEvent(struct primitive*);
+struct event* newDrawEvent(struct primitive*);
+struct event* newTransformEvent(struct event*, struct primitive*);
+struct event* newDummyEvent(struct primitive*);
 struct primitive* newPrimitive(enum primitiveType);
 void preparePrimitive(struct primitive*);
 

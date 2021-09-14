@@ -3,6 +3,7 @@
 #include "object.h"
 #include "present.h"
 #include "symtable.h"
+#include "transform.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,8 +86,10 @@ newDrawEvent(struct primitive *p){
 
     struct event *e = malloc(sizeof(struct event));
     e -> next = NULL;
+    e -> sym = NULL;
     e -> eventType = 0;
     e -> pr = p;
+    e -> from = NULL;
 
     if (g_parent) {
 
@@ -113,6 +116,69 @@ newDrawEvent(struct primitive *p){
             t = getLast(t);
             t -> next = e;
         }
+    }
+
+    addPrim(p -> t, e);
+    return e;
+}
+
+struct event*
+newTransformEvent(struct event *from, struct primitive *to){
+    struct scene *s = g_presentation -> scenes;
+    s = getLast(s);
+
+    struct event *e = malloc(sizeof(struct event));
+    e -> next = NULL;
+    e -> sym = NULL;
+    e -> eventType = 1;
+    e -> pr = to;
+    e -> from = from;
+
+    if (!s -> keyframes) {
+        fprintf(stderr, "Warning: adding default keyframe before "
+                "line no. %d\n", yylineno - 1);
+        newKeyframe(1.0, EASE_STILL);
+    }
+
+    struct keyframe *k = getLast(s -> keyframes);
+    if (!k -> events) {
+        k -> events = e;
+    } else {
+        struct event *t = k -> events;
+        t = getLast(t);
+        t -> next = e;
+    }
+
+    addPrim(to -> t, e);
+    prepareTransform(e, from -> pr);
+    return e;
+}
+
+struct event*
+newDummyEvent(struct primitive *p){
+    struct scene *s = g_presentation -> scenes;
+    s = getLast(s);
+
+    struct event *e = malloc(sizeof(struct event));
+    e -> next = NULL;
+    e -> sym = NULL;
+    e -> eventType = 2;
+    e -> pr = p;
+    e -> from = NULL;
+
+    if (!s -> keyframes) {
+        fprintf(stderr, "Warning: adding default keyframe before "
+                "line no. %d\n", yylineno - 1);
+        newKeyframe(1.0, EASE_STILL);
+    }
+
+    struct keyframe *k = getLast(s -> keyframes);
+    if (!k -> events) {
+        k -> events = e;
+    } else {
+        struct event *t = k -> events;
+        t = getLast(t);
+        t -> next = e;
     }
 
     addPrim(p -> t, e);

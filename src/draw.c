@@ -1,8 +1,7 @@
 #include "tex.h"
 #include "draw.h"
-#include "object.h"
 #include "symtable.h"
-#include <cairo.h>
+#include "transform.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -141,20 +140,20 @@ drawLine(cairo_t *cr, struct primitive *p){
 static void
 drawSpline(cairo_t *cr, struct primitive *p){
 
-#define LEP(T, P0, P1) ((T) * (P0) + (1.0 - (T)) * (P1))
+#define LERP(T, P0, P1) ((T) * (P0) + (1.0 - (T)) * (P1))
 
     if (p -> flags & 256) {
         cairo_new_path(cr);
         cairo_move_to(cr,
-                LEP(0.5, p -> start.x, p -> segments -> x),
-                LEP(0.5, p -> start.y, p -> segments -> y));
+                LERP(0.5, p -> start.x, p -> segments -> x),
+                LERP(0.5, p -> start.y, p -> segments -> y));
     } else {
         drawLineArrowhead(cr, p);
         cairo_new_path(cr);
         cairo_move_to(cr, p -> start.x, p -> start.y);
         cairo_line_to(cr,
-                LEP(0.5, p -> start.x, p -> segments -> x),
-                LEP(0.5, p -> start.y, p -> segments -> y));
+                LERP(0.5, p -> start.x, p -> segments -> x),
+                LERP(0.5, p -> start.y, p -> segments -> y));
     }
 
     struct location *l = p -> segments;
@@ -162,36 +161,36 @@ drawSpline(cairo_t *cr, struct primitive *p){
 
     while (l -> next) {
         cairo_curve_to(cr,
-                LEP(0.2, l0.x, l -> x),
-                LEP(0.2, l0.y, l -> y),
-                LEP(0.8, l -> x, l -> next -> x),
-                LEP(0.8, l -> y, l -> next -> y),
-                LEP(0.5, l -> x, l -> next -> x),
-                LEP(0.5, l -> y, l -> next -> y));
+                LERP(0.2, l0.x, l -> x),
+                LERP(0.2, l0.y, l -> y),
+                LERP(0.8, l -> x, l -> next -> x),
+                LERP(0.8, l -> y, l -> next -> y),
+                LERP(0.5, l -> x, l -> next -> x),
+                LERP(0.5, l -> y, l -> next -> y));
         l0 = (struct vec2d) {l -> x, l -> y};
         l = l -> next;
     }
 
     if (p -> flags & 256) {
         cairo_curve_to(cr,
-                LEP(0.2, l0.x, l -> x),
-                LEP(0.2, l0.y, l -> y),
-                LEP(0.8, l -> x, p -> start.x),
-                LEP(0.8, l -> y, p -> start.y),
-                LEP(0.5, l -> x, p -> start.x),
-                LEP(0.5, l -> y, p -> start.y));
+                LERP(0.2, l0.x, l -> x),
+                LERP(0.2, l0.y, l -> y),
+                LERP(0.8, l -> x, p -> start.x),
+                LERP(0.8, l -> y, p -> start.y),
+                LERP(0.5, l -> x, p -> start.x),
+                LERP(0.5, l -> y, p -> start.y));
 
         cairo_curve_to(cr,
-                LEP(0.2, l -> x, p -> start.x),
-                LEP(0.2, l -> y, p -> start.y),
-                LEP(0.8, p -> start.x, p -> segments -> x),
-                LEP(0.8, p -> start.y, p -> segments -> y),
-                LEP(0.5, p -> start.x, p -> segments -> x),
-                LEP(0.5, p -> start.y, p -> segments -> y));
+                LERP(0.2, l -> x, p -> start.x),
+                LERP(0.2, l -> y, p -> start.y),
+                LERP(0.8, p -> start.x, p -> segments -> x),
+                LERP(0.8, p -> start.y, p -> segments -> y),
+                LERP(0.5, p -> start.x, p -> segments -> x),
+                LERP(0.5, p -> start.y, p -> segments -> y));
     } else {
         cairo_line_to(cr, l -> x, l -> y);
     }
-#undef LEP
+#undef LERP
 
 }
 
@@ -290,7 +289,7 @@ prepareMask(cairo_t *cr, struct primitive *p, float f) {
     struct vec2d *e = getExtremes(p);
     cairo_pattern_t *pat;
 
-#define LEP(P, T)                                           \
+#define LERP(P, T)                                           \
     cairo_pattern_add_color_stop_rgba(P, 0, 0, 0, 0, 1);    \
     cairo_pattern_add_color_stop_rgba(P, T, 0, 0, 0, 1);    \
     cairo_pattern_add_color_stop_rgba(P, T, 0, 0, 0, 0);    \
@@ -322,35 +321,40 @@ prepareMask(cairo_t *cr, struct primitive *p, float f) {
                             e[0].x, e[1].y);
                     break;
             }
-            LEP(pat, f);
+            LERP(pat, f);
             break;
         case 3:
             pat = cairo_pattern_create_radial(e[1].x, e[1].y,
                     0,  e[1].x, e[1].y, e[2].x - e[1].x);
-            LEP(pat, f);
+            LERP(pat, f);
             break;
     }
 
+    free(e);
     return pat;
 }
 
 static void
-renderEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e, float p){
-    if (e -> eventType == 0) {
-        cairo_set_source(cr, e -> pat);
-        cairo_pattern_t *pat;
-        pat = prepareMask(cr, e -> pr, p);
-        cairo_mask(cr, pat);
-        cairo_pattern_destroy(pat);
-    } else {
+renderEvent(cairo_t *cr, struct event *e, float p){
+    switch (e -> eventType) {
+        case 0:
+            cairo_set_source(cr, e -> pat);
+            cairo_pattern_t *pat;
+            pat = prepareMask(cr, e -> pr, p);
+            cairo_mask(cr, pat);
+            cairo_pattern_destroy(pat);
+            break;
+        case 1:
+            cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+            transformSetSource(cr, e, p);
+            cairo_paint(cr);
+            cairo_set_antialias(cr, CAIRO_ANTIALIAS_FAST);
+            break;
     }
 }
 
-static cairo_pattern_t*
-prepareDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
-    struct primitive *p = e -> pr;
-    cairo_push_group(cr);
-
+void
+drawPrimitive(cairo_t *cr, struct primitive *p) {
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     switch (p -> t) {
         case PRIM_BOX:
@@ -370,8 +374,7 @@ prepareDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
             {
                 struct event *e = p -> child;
                 for (; e; e = e -> next) {
-                    e -> pat = prepareDrawEvent(surface, cr, e);
-                    renderEvent(surface, cr, e, 1.0);
+                    drawPrimitive(cr, e -> pr);
                 }
             }
             break;
@@ -401,17 +404,14 @@ prepareDrawEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e){
         cairo_set_source_rgba(cr, 0, 0, 0, 0);
         cairo_stroke(cr);
     }
-
     drawTextList(cr, p -> txt);
-    return cairo_pop_group(cr);
 }
 
 static void
-prepareEvent(cairo_surface_t *surface, cairo_t *cr, struct event *e) {
-    if (e -> eventType == 0) {
-        e -> pat = prepareDrawEvent(surface, cr, e);
-    } else {
-    }
+prepareDrawEvent(cairo_t *cr, struct event *e){
+    cairo_push_group(cr);
+    drawPrimitive(cr, e -> pr);
+    e -> pat = cairo_pop_group(cr);
 }
 
 static float
@@ -461,6 +461,50 @@ ease(float i, float t, enum easingFunction easingFunc) {
     return x;
 }
 
+static int
+removeFromEvent(struct scene *s, struct event *eT) {
+    if (eT -> from -> eventType == 2) {
+        return 0;
+    }
+
+    for (struct keyframe *k = s -> keyframes; k; k = k -> next) {
+        struct event *e0 = k -> events;
+        if (!e0) continue;
+
+        if (e0 == eT -> from) {
+            k -> events = e0 -> next;
+            // TODO: freeEvent(e0);
+            continue;
+        }
+
+        struct event *e1 = e0 -> next;
+
+        while (e1) {
+            if (e1 == eT -> from) {
+                e0 -> next = e1 -> next;
+                // TODO: freeEvent(e1);
+                break;
+            }
+            e0 = e1;
+            e1 = e1 -> next;
+        }
+    }
+
+    return 1;
+}
+
+static void
+redrawScene(cairo_t *cr, struct scene *s, struct keyframe *kE) {
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_paint(cr);
+    struct keyframe *k = s -> keyframes;
+    for (; k && k != kE; k = k -> next) {
+        for (struct event *e = k -> events; e; e = e -> next) {
+            renderEvent(cr, e, 1.0);
+        }
+    }
+}
+
 void
 renderPresentation(const char* filename){
     char *ffmpeg_cmd = malloc(256);
@@ -490,13 +534,25 @@ renderPresentation(const char* filename){
 
     cairo_translate(cr, WIDTH / 2, HEIGHT / 2);
     cairo_scale(cr, DPI, -DPI);
+    cairo_set_antialias(cr, CAIRO_ANTIALIAS_FAST);
 
     for (struct scene *s = g_presentation -> scenes; s; s = s -> next) {
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
         cairo_paint(cr);
         for (struct keyframe *k = s -> keyframes; k; k = k -> next) {
+            int requireRedraw = 0;
             for (struct event *e = k -> events; e; e = e -> next) {
-                prepareEvent(surface, cr, e);
+                switch (e -> eventType) {
+                    case 0:
+                        prepareDrawEvent(cr, e);
+                        break;
+                    case 1:
+                        requireRedraw |= removeFromEvent(s, e);
+                        break;
+                }
+            }
+            if (requireRedraw) {
+                redrawScene(cr, s, k);
             }
 
             cairo_surface_flush(surface);
@@ -508,8 +564,8 @@ renderPresentation(const char* filename){
                     cairo_surface_mark_dirty(surface);
                 }
                 for (struct event *e = k -> events; e; e = e -> next) {
-                    float p = ease(i, numFrame, k -> easingFunc);
-                    renderEvent(surface, cr, e, p);
+                    float p = ease(i + 1, numFrame, k -> easingFunc);
+                    renderEvent(cr, e, p);
                 }
                 fwrite(buf, WIDTH * HEIGHT * 4, 1, ffmpeg);
             }
@@ -521,4 +577,5 @@ renderPresentation(const char* filename){
     cairo_surface_destroy(surface);
     pclose(ffmpeg);
     cleanTexDir();
+    cleanTransform();
 };

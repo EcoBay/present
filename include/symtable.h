@@ -38,6 +38,7 @@ struct symTable {
 };
 
 struct symbol* lookup(char*);
+struct symbol* removeSym(char*);
 void setSym(char*, enum symType, union T);
 int resetSym(char*);
 void clearSym();
@@ -45,6 +46,7 @@ void clearSym();
 void addPrim(enum primitiveType, struct event*);
 struct event* getPrim(enum primitiveType, int);
 struct event* getPrim_r(enum primitiveType, int);
+void removePrim(struct primitive*);
 
 void pushTable();
 struct symTable* switchTable(struct symTable *tb);

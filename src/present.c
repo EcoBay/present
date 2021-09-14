@@ -45,6 +45,8 @@ static void catchErr(int signo) {
 int main(int argc, char **argv){
     struct sigaction sa;
     sa.sa_handler = catchErr;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
 
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGINT, &sa,  NULL);

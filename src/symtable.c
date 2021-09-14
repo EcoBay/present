@@ -26,6 +26,29 @@ lookup(char *sym) {
     return NULL;
 }
 
+struct symbol*
+removeSym(char *sym) {
+    unsigned h = hash(sym) & HASH_MOD;
+    struct symbol *s0 = g_symtable -> table[h];
+    if (!s0) return NULL;
+
+    struct symbol *s1 = s0 -> next;
+
+    if (strcmp(s0 -> sym, sym) == 0) {
+        g_symtable -> table[h] = s1;
+        return s0;
+    }
+
+    for (; s1; s0 = s1, s1 = s1 -> next) {
+        if (strcmp(s1 -> sym, sym) == 0) {
+            s0 -> next = s1 -> next;
+            return s1;
+        }
+    }
+
+    return NULL;
+}
+
 void
 setSym(char *sym, enum symType t, union T val) {
     unsigned h = hash(sym) & HASH_MOD;
@@ -56,28 +79,13 @@ setSym(char *sym, enum symType t, union T val) {
 
 int
 resetSym(char *sym) {
-    unsigned h = hash(sym) & HASH_MOD;
-
-    struct symbol *s0 = g_symtable -> table[h];
-    if (!s0) return 1;
-
-    struct symbol *s1 = s0 -> next;
-
-    if (strcmp(s0 -> sym, sym) == 0) {
-        g_symtable -> table[h] = s1;
-        free(s0);
+    struct symbol *s = removeSym(sym);
+    if (s) {
+        free(s);
         return 0;
+    } else {
+        return 1;
     }
-
-    for (; s1; s0 = s1, s1 = s1 -> next) {
-        if (strcmp(s1 -> sym, sym) == 0) {
-            s0 -> next = s1 -> next;
-            free(s1);
-            return 0;
-        }
-    }
-
-    return 1;
 }
 
 void
@@ -134,6 +142,26 @@ getPrim_r(enum primitiveType T, int loc) {
     }
 
     return l ? l -> e : NULL;
+}
+
+void
+removePrim(struct primitive *p) {
+    struct eventList *l0 = g_symtable -> list[p -> t];
+    if (!l0) return;
+    struct eventList *l1 = l0 -> next;
+
+    if (p == l0 -> e -> pr) {
+        g_symtable -> list[p -> t] = l1;
+        free(l0);
+    }
+
+
+    for (; l1; l0 = l1, l1 = l1 -> next) {
+        if (p == l1 -> e -> pr) {
+            l0 -> next = l1 -> next;
+            free(l1);
+        }
+    }
 }
 
 void

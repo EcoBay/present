@@ -64,7 +64,7 @@ struct _t {
 %token <i> ORDINAL
 
 /* present extensions */
-%token KEYFRAME SCENE
+%token KEYFRAME SCENE TRANSFORM INTO
 
 /* easing function */
 %token STILL LINEAR SINE QUADRATIC CUBIC
@@ -82,6 +82,7 @@ struct _t {
 %type <a> keyframe_stmt direction_stmt element_list by condition
 %type <a> primitive expr duration color position place string
 %type <a> position_not_place expr_pair reset prim_labels animation
+%type <a> transform_stmt transform_label
 %type <al>  sprintf_args
 %type <i> positioning easing corner optional_corner primitive_type
 %type <tl> iden_list
@@ -190,13 +191,31 @@ present: keyframe_stmt                      { $$ = $1; }
        | FOR expr TIMES DO '{' program '}'  { $$ = astRpt($2, $6); }
        | SCENE                              { $$ = astScn(NULL); }
        | SCENE string                       { $$ = astScn($2); }
+       | transform_stmt                     { $$ = $1; }
+       | transform_label                    { $$ = $1; }
+;
+
+transform_label: LABEL ':' transform_stmt
+                    { $$ = astAsgn($1, SYM_EVENT, $3); }
+               | LABEL ':' EOL transform_label
+                    { $$ = astAsgn($1, SYM_EVENT, $4); }
+               | LABEL ':' transform_label 
+                    { $$ = astAsgn($1, SYM_EVENT, $3); }
+;
+
+transform_stmt: TRANSFORM primitive INTO primitive
+                { $$ = astTrn(astObj($2), $4); }
+              | TRANSFORM LABEL INTO primitive
+                { $$ = astTrn(astLbl($2), $4); }
+              | TRANSFORM nth_prim INTO primitive
+                { $$ = astTrn($2, $4); }
 ;
 
 keyframe_stmt: easing KEYFRAME              { $$ = astKF(NULL, $1); }
              | easing KEYFRAME FOR duration { $$ = astKF($4, $1); }
 ;
 
-easing: %empty          { $$ = EASE_STILL; }
+easing: %empty          { $$ = EASE_LINEAR; }
       | STILL           { $$ = EASE_STILL; }
       | LINEAR          { $$ = EASE_LINEAR; }
       | SINE            { $$ = EASE_SINE; }

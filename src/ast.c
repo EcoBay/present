@@ -168,6 +168,26 @@ astIf(struct ast *cond, struct ast *succ, struct ast *fail) {
 }
 
 struct ast*
+astTrn(struct ast *l, struct ast *r) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = AST_TRN;
+    a -> l = l;
+    a -> r = r;
+
+    return a;
+}
+
+struct ast*
+astObj(struct ast *l) {
+    struct ast *a = malloc(sizeof(struct ast));
+    a -> t = AST_OBJ;
+    a -> l = l;
+    a -> r = NULL;
+   
+    return a;
+}
+
+struct ast*
 astPrim(enum primitiveType pt) {
     struct _ast_prim *a = malloc(sizeof(struct _ast_prim));
     a -> t = AST_PRIM;
@@ -1142,6 +1162,42 @@ eval(struct ast *a, ...) {
                 }
             }
             break;
+        case AST_TRN:
+            {
+                struct event *from;
+                from = eval(a -> l).e;
+
+                removePrim(from -> pr);
+                if (from -> sym) {
+                    struct symbol *s;
+                    s = removeSym(from -> sym);
+                    free(s -> sym);
+                    free(s);
+                }
+
+                struct primitive *to;
+                to = eval(a -> r).p;
+                preparePrimitive(to);
+
+                ret.e = newTransformEvent(from, to);
+            }
+            break;
+        case AST_OBJ:
+            {
+                struct primitive *p = eval(a -> l).p;
+
+                struct vec2d c;
+                getCursor(&c);
+                int dir = getDirection();
+
+                preparePrimitive(p);
+
+                setDirection(dir);
+                setCursor(&c);
+
+                ret.e = newDummyEvent(p);
+            }
+            break;
         case AST_PRIM:
             {
                 ret.p = evalPrim( (struct _ast_prim*) a );
@@ -1303,13 +1359,13 @@ eval(struct ast *a, ...) {
 
                 if (t -> r) {
                     if (!(ret.e = getPrim_r(t -> T, t -> i))) {
-                        fprintf(stderr, "Error: %dth primitive "
+                        fprintf(stderr, "Error: %dth last primitive "
                                 "out of range\n", t -> i);
                         abort();
                     }
                 } else {
                     if (!(ret.e = getPrim(t -> T, t -> i))) {
-                        fprintf(stderr, "Error: %dth last primitive "
+                        fprintf(stderr, "Error: %dth primitive "
                                 "out of range\n", t -> i);
                         abort();
                     }
@@ -1325,6 +1381,7 @@ eval(struct ast *a, ...) {
                     setSym(t -> sym, SYM_DOUBLE, v);
                 } else {
                     ret.e = v.e = eval(t -> a).e;
+                    ret.e -> sym = strdup(t -> sym);
                     setSym(t -> sym, SYM_EVENT, v);
                 }
             }
@@ -1398,6 +1455,7 @@ void freeTree (struct ast* a) {
         case AST_SCN:
         case AST_GRP:
         case AST_RPT:
+        case AST_TRN:
         case AST_DRAW:
         case AST_PRN:
         case AST_TBL:
@@ -1405,6 +1463,7 @@ void freeTree (struct ast* a) {
         case AST_VADD:
         case AST_VSUB:
         case AST_VSEP:
+        case AST_OBJ:
             freeTree(a -> l);
             freeTree(a -> r);
             break;
@@ -1416,16 +1475,10 @@ void freeTree (struct ast* a) {
         case AST_INTL:
         case AST_PRIM:
         case AST_ORD:
+        case AST_LBL:
+        case AST_REF:
             break;
 
-        case AST_REF:
-        case AST_LBL:
-            {
-                struct _ast_term *t;
-                t = (struct _ast_term*) a;
-                free(t -> val.s);
-            }
-            break;
         case AST_RST:
             {
                 struct _ast_rst *t = (struct _ast_rst*) a;
